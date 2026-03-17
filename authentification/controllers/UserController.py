@@ -7,7 +7,7 @@ from django.contrib import messages
 @require_GET
 def login_user_page(request):
     if request.user.is_authenticated:
-        return redirect('tresorerie_page')  # Redirige si déjà connecté
+        return redirect('dashboard_page')  # Redirige si déjà connecté
     return render(request, "views/login_user.html")
 
 @require_POST
@@ -19,7 +19,7 @@ def login_user(request):
     )
     if user:
         login(request, user)
-        return redirect('tresorerie_page')
+        return redirect('dashboard_page')
     else :
         messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
         return redirect('login_user_page')
