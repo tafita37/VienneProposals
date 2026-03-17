@@ -1,0 +1,75 @@
+{% load static %}
+
+<aside class="sidebar">
+    <button class="sidebar-close-mobile" onclick="closeMobileSidebar()">✕</button>
+    <div class="sidebar-logo">
+        <img src="{% static 'img/logo.png' %}" alt="Vienne Agencement" class="logo-img">
+    </div>
+    <nav class="nav-menu">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard_page' %}">
+                <span class="nav-link-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{% static 'catalogue.html' %}">
+                <span class="nav-link-icon">📦</span>
+                <span>Catalogue</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'create-proposition.html' %}">
+                <span class="nav-link-icon">✏️</span>
+                <span>Nouvelle Proposition</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'propositions.html' %}">
+                <span class="nav-link-icon">📄</span>
+                <span>Propositions</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'clients.html' %}">
+                <span class="nav-link-icon">👥</span>
+                <span>Clients</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'categories.html' %}">
+                <span class="nav-link-icon">🏷️</span>
+                <span>Catégories</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'products.html' %}">
+                <span class="nav-link-icon">🛠️</span>
+                <span>Produits</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'import.html' %}">
+                <span class="nav-link-icon">📥</span>
+                <span>Import Excel</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% static 'admin.html' %}">
+                <span class="nav-link-icon">⚙️</span>
+                <span>Administration</span>
+            </a>
+        </li>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info user-menu-trigger" id="userMenuTrigger" tabindex="0" role="button" aria-haspopup="true"
+            aria-expanded="false">
+            <div class="user-avatar">M</div>
+            <div class="user-name">Marc Dupont</div>
+        </div>
+        <a class="btn-logout" id="sidebarLogoutBtn" href="{% url 'logout_user' %}">Déconnexion</a>
+        <div class="logout-menu" id="sidebarLogoutMenu" hidden>
+            <a href="{% url 'logout_user' %}">Déconnexion</a>
+        </div>
+    </div>
+</aside>

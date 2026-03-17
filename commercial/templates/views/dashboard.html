@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Dashboard - Vienne Agencement{% endblock %}
+
+{% block header_title %}Dashboard{% endblock %}
+
+{% block header_subtitle %}Bienvenue sur Vienne Agencement{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/dashboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Bienvenue sur Vienne Agencement</h2>
+    <p style="line-height: 1.8; color: var(--text-light); margin-bottom: 1rem;">
+        Cet outil vous permet de gérer vos propositions commerciales de manière efficace et
+        professionnelle.
+    </p>
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+        <div class="stat-box">
+            <div class="stat-number">42</div>
+            <div class="stat-label">Propositions créées</div>
+        </div>
+        <div class="stat-box success">
+            <div class="stat-number">28</div>
+            <div class="stat-label">Propositions validées</div>
+        </div>
+        <div class="stat-box warning">
+            <div class="stat-number">14</div>
+            <div class="stat-label">En attente</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Accès rapide</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <a href="catalogue.html" class="btn btn-primary" style="text-align: center; padding: 1rem;">📦
+            Consulter le catalogue</a>
+        <a href="create-proposition.html" class="btn btn-primary" style="text-align: center; padding: 1rem;">✏️
+            Créer une proposition</a>
+        <a href="propositions.html" class="btn btn-primary" style="text-align: center; padding: 1rem;">📄
+            Mes propositions</a>
+        <a href="import.html" class="btn btn-primary" style="text-align: center; padding: 1rem;">📥
+            Importer Excel</a>
+    </div>
+</div>
+{% endblock %}

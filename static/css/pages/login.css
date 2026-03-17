@@ -1,1 +1,27 @@
 ﻿/* Styles spécifiques: login */
+
+.login-screen {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	background: linear-gradient(135deg, var(--primary-dark) 0%, #34495e 100%);
+}
+
+.login-container {
+	background: white;
+	padding: 3rem 2.5rem;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	width: 100%;
+	max-width: 400px;
+}
+
+.login-demo {
+	text-align: center;
+	font-size: 0.85rem;
+	color: var(--text-light);
+	margin-top: 1.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--border);
+}

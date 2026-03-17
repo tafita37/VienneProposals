@@ -49,24 +49,6 @@ body {
     color: var(--text-dark);
 }
 
-/* ========== ÉCRAN DE CONNEXION ========== */
-.login-screen {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #34495e 100%);
-}
-
-.login-container {
-    background: white;
-    padding: 3rem 2.5rem;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 400px;
-}
-
 .logo {
     text-align: center;
     margin-bottom: 2rem;
@@ -245,15 +227,6 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-}
-
-.login-demo {
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--text-light);
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
 }
 
 /* ========== LAYOUT PRINCIPAL ========== */
@@ -463,6 +436,8 @@ body {
     cursor: pointer;
     transition: all 0.3s;
     font-size: 0.85rem;
+    display: block;
+    text-decoration: none;
 }
 
 .btn-logout:hover {
@@ -493,6 +468,19 @@ body {
     transition: background 0.2s;
 }
 .logout-menu button:hover {
+    background: var(--primary-light);
+}
+
+.logout-menu a {
+    display: block;
+    color: var(--text-dark);
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    transition: background 0.2s;
+}
+
+.logout-menu a:hover {
     background: var(--primary-light);
 }
 
@@ -643,244 +631,6 @@ tbody tr:hover {
     color: var(--accent);
 }
 
-/* ========== PROPOSITION ========== */
-.proposition-header {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.form-section {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-}
-
-.summary-by-category {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    margin-bottom: 2rem;
-}
-
-.summary-section {
-    margin-bottom: 1.5rem;
-}
-
-.summary-section:last-child {
-    margin-bottom: 0;
-}
-
-.summary-category-title {
-    font-weight: 600;
-    color: var(--accent);
-    padding: 0.75rem;
-    background: rgba(13, 115, 119, 0.05);
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.summary-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.summary-item:last-child {
-    border-bottom: none;
-}
-
-.summary-item-name {
-    flex: 1;
-}
-
-.summary-item-qty {
-    font-weight: 500;
-    color: var(--text-dark);
-    margin: 0 1rem;
-}
-
-.summary-item-total {
-    font-weight: 600;
-    color: var(--accent);
-    text-align: right;
-    min-width: 100px;
-}
-
-.proposal-total {
-    background: var(--accent);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    text-align: right;
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 2rem;
-}
-
-/* ========== APERÇU PROPOSITION ========== */
-.preview-document {
-    background: white;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 3rem;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-
-.preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 2rem;
-    border-bottom: 2px solid var(--border);
-    margin-bottom: 2rem;
-}
-
-.preview-logo {
-    text-align: left;
-}
-
-.preview-logo-main {
-    font-size: 2rem;
-    font-weight: 300;
-    letter-spacing: 2px;
-    color: var(--text-dark);
-}
-
-.preview-logo-sub {
-    font-size: 0.75rem;
-    letter-spacing: 3px;
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 0.3rem;
-}
-
-.preview-client-info {
-    text-align: right;
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-
-.preview-client-label {
-    font-weight: 600;
-    color: var(--text-dark);
-}
-
-.preview-title {
-    font-size: 1.8rem;
-    font-weight: 600;
-    text-align: center;
-    margin: 2rem 0;
-    color: var(--primary-dark);
-}
-
-.preview-table {
-    width: 100%;
-    margin: 2rem 0;
-}
-
-.preview-table thead {
-    background-color: var(--primary-dark);
-    color: white;
-}
-
-.preview-table th {
-    padding: 1rem;
-    text-align: left;
-    font-weight: 600;
-}
-
-.preview-table td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.preview-table td strong {
-    white-space: nowrap; /* empêche le retour à la ligne */
-}
-
-.preview-row-total {
-    background-color: #f9f7f4;
-    font-weight: 600;
-}
-
-.preview-totals {
-    margin-top: 2rem;
-    border-top: 2px solid var(--border);
-    padding-top: 2rem;
-}
-
-.preview-total-line {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 0;
-    font-size: 1rem;
-}
-
-.preview-total-line.grand-total {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--accent);
-    background: rgba(13, 115, 119, 0.05);
-    padding: 1rem;
-    border-radius: 4px;
-    margin-top: 1rem;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-    justify-content: center;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border);
-}
-
-.stat-box {
-    background: rgba(13, 115, 119, 0.05);
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid var(--accent);
-}
-
-.stat-box.success {
-    background: rgba(39, 174, 96, 0.05);
-    border-left-color: var(--success);
-}
-
-.stat-box.warning {
-    background: rgba(243, 156, 18, 0.05);
-    border-left-color: var(--warning);
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--accent);
-}
-
-.stat-box.success .stat-number {
-    color: var(--success);
-}
-
-.stat-box.warning .stat-number {
-    color: var(--warning);
-}
-
-.stat-label {
-    color: var(--text-light);
-    margin-top: 0.5rem;
-}
-
 .badge {
     display: inline-block;
     padding: 0.4rem 0.8rem;
@@ -912,10 +662,6 @@ tbody tr:hover {
 
     .main-content {
         margin-left: 200px;
-    }
-
-    .proposition-header {
-        grid-template-columns: 1fr;
     }
 
     .filters {
@@ -1046,17 +792,9 @@ tbody tr:hover {
 @media print {
     .sidebar,
     .header,
-    .action-buttons,
     .nav-menu,
     .sidebar-footer {
         display: none;
-    }
-
-    .preview-document {
-        box-shadow: none;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0;
     }
 
     .main-content {

@@ -1,1 +1,37 @@
 ﻿/* Styles spécifiques: dashboard */
+
+.stat-box {
+	background: rgba(13, 115, 119, 0.05);
+	padding: 1.5rem;
+	border-radius: 8px;
+	border-left: 4px solid var(--accent);
+}
+
+.stat-box.success {
+	background: rgba(39, 174, 96, 0.05);
+	border-left-color: var(--success);
+}
+
+.stat-box.warning {
+	background: rgba(243, 156, 18, 0.05);
+	border-left-color: var(--warning);
+}
+
+.stat-number {
+	font-size: 2rem;
+	font-weight: 600;
+	color: var(--accent);
+}
+
+.stat-box.success .stat-number {
+	color: var(--success);
+}
+
+.stat-box.warning .stat-number {
+	color: var(--warning);
+}
+
+.stat-label {
+	color: var(--text-light);
+	margin-top: 0.5rem;
+}

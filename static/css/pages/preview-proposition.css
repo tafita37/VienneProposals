@@ -1,1 +1,132 @@
 ﻿/* Styles spécifiques: preview-proposition */
+
+.preview-document {
+	background: white;
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 3rem;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.preview-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	padding-bottom: 2rem;
+	border-bottom: 2px solid var(--border);
+	margin-bottom: 2rem;
+}
+
+.preview-logo {
+	text-align: left;
+}
+
+.preview-logo-main {
+	font-size: 2rem;
+	font-weight: 300;
+	letter-spacing: 2px;
+	color: var(--text-dark);
+}
+
+.preview-logo-sub {
+	font-size: 0.75rem;
+	letter-spacing: 3px;
+	color: var(--accent);
+	font-weight: 600;
+	margin-top: 0.3rem;
+}
+
+.preview-client-info {
+	text-align: right;
+	font-size: 0.95rem;
+	line-height: 1.6;
+}
+
+.preview-client-label {
+	font-weight: 600;
+	color: var(--text-dark);
+}
+
+.preview-title {
+	font-size: 1.8rem;
+	font-weight: 600;
+	text-align: center;
+	margin: 2rem 0;
+	color: var(--primary-dark);
+}
+
+.preview-table {
+	width: 100%;
+	margin: 2rem 0;
+}
+
+.preview-table thead {
+	background-color: var(--primary-dark);
+	color: white;
+}
+
+.preview-table th {
+	padding: 1rem;
+	text-align: left;
+	font-weight: 600;
+}
+
+.preview-table td {
+	padding: 1rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.preview-table td strong {
+	white-space: nowrap;
+}
+
+.preview-row-total {
+	background-color: #f9f7f4;
+	font-weight: 600;
+}
+
+.preview-totals {
+	margin-top: 2rem;
+	border-top: 2px solid var(--border);
+	padding-top: 2rem;
+}
+
+.preview-total-line {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.75rem 0;
+	font-size: 1rem;
+}
+
+.preview-total-line.grand-total {
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: var(--accent);
+	background: rgba(13, 115, 119, 0.05);
+	padding: 1rem;
+	border-radius: 4px;
+	margin-top: 1rem;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 1rem;
+	margin-top: 2rem;
+	justify-content: center;
+	padding-top: 2rem;
+	border-top: 1px solid var(--border);
+}
+
+@media print {
+	.action-buttons {
+		display: none;
+	}
+
+	.preview-document {
+		box-shadow: none;
+		max-width: 100% !important;
+		margin: 0 !important;
+		padding: 0;
+	}
+}
