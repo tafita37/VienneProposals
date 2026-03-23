@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Proposition 2026-{{ proposal.id }}{% endblock %}
+
+{% block header_title %}Proposition numéro 2026-{{ proposal.id }}{% endblock %}
+
+{% block header_subtitle %}Propositions commerciale - Document professionnel{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/preview-proposition.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/preview-proposition.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="preview-document">
+    <div class="preview-header">
+        <div class="preview-logo">
+            <img src="{% static 'img/logo.png' %}" alt="Vienne Agencement" class="logo-img">
+        </div>
+        <div class="preview-client-info">
+            <div class="preview-client-label">PROPOSITION COMMERCIALE</div>
+            <p style="margin-top: 0.5rem;">Numéro : <strong>PROP-2026-{{proposal.id}}</strong></p>
+            <p>Date : <strong>{{ proposal.date_proposal }}</strong></p>
+        </div>
+    </div>
+
+    <div class="preview-title">Proposition de Votre Aménagement Intérieur</div>
+
+    <div style="margin: 2rem 0; padding: 1.5rem; background: #f9f7f4; border-radius: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);">CLIENT
+                </div>
+                <div id="previewClientName" style="color: var(--text-dark); margin-bottom: 0.25rem;">{{ proposal.client.name }}</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">{{ proposal.client.address|default:'-' }}</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">{{ proposal.client.phone|default:'-' }}</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">{{ proposal.client.email|default:'-' }}</div>
+            </div>
+            <div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);">
+                    CONDITIONS</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">Validité : 30 jours</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">Délai de livraison : 4
+                    semaines</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">Paiement : À la commande</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">TVA : 20%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="preview-table">
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if summary_categories %}
+                    {% for category in summary_categories %}
+                        {% for item in category.items %}
+                        <tr>
+                            {% if forloop.first %}
+                            <td><strong>{{ category.name }}</strong></td>
+                            {% else %}
+                            <td></td>
+                            {% endif %}
+                            <td>{{ item.designation }}</td>
+                            <td>{{ item.quantity|floatformat:2 }}</td>
+                            <td>{{ item.sale_unit_price|floatformat:2 }}€</td>
+                            <td><strong>{{ item.total|floatformat:2 }}€</strong></td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="preview-row-total">
+                            <td colspan="4" style="text-align: right;">Sous-total {{ category.name }}</td>
+                            <td>{{ category.total|floatformat:2 }}€</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-light);">
+                            Aucun produit sélectionné
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="preview-totals">
+        <div class="preview-total-line">
+            <span>Montant HT</span>
+            <span><strong>{{ proposal.amount_ht|floatformat:2 }}€</strong></span>
+        </div>
+        <div class="preview-total-line" style="color: var(--text-light);">
+            <span>TVA (20%)</span>
+            <span>{{ tva_amount|floatformat:2 }}€</span>
+        </div>
+        <div class="preview-total-line grand-total">
+            <span>MONTANT TOTAL TTC</span>
+            <span>{{ proposal.amount_ttc|floatformat:2 }}€</span>
+        </div>
+    </div>
+
+    <!-- <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+        <p style="color: var(--text-light); font-size: 0.85rem; text-align: center;">
+            Cette proposition est valable 30 jours à partir de la date mentionnée ci-dessus.<br>
+            Merci de nous contacter pour toute question ou modification.
+        </p>
+    </div> -->
+
+    <div class="action-buttons">
+        <a href="{% url 'new_proposition_page' %}" class="btn btn-secondary">← Retour</a>
+        <button type="button" class="btn btn-pdf" onclick="window.print()">📥 Télécharger PDF</button>
+    </div>
+</div>
+{% endblock %}

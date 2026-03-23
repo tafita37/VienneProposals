@@ -614,6 +614,7 @@ def validate_proposition_page(request):
         try:
             coefficient = float(item.get('coefficient', 0))
             quantity = float(item.get('quantity', 0))
+            product_id = int(product.get('id', 0)) if isinstance(product, dict) else 0
         except (TypeError, ValueError):
             continue
 
@@ -638,6 +639,7 @@ def validate_proposition_page(request):
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
             'unit_price': max(0.0, unit_price),
+            'product_id': product_id if product_id > 0 else None,
         })
 
     if len(proposal_rows) == 0:
@@ -651,15 +653,26 @@ def validate_proposition_page(request):
             client=selected_client,
         )
 
-        ProposalProduct.objects.bulk_create([
-            ProposalProduct(
-                coefficient=row['coefficient'],
-                quantity=row['quantity'],
-                unit_price=row['unit_price'],
-                commercial_proposal=commercial_proposal,
+        proposal_product_objects = []
+        for row in proposal_rows:
+            product_obj = None
+            if row['product_id'] is not None:
+                try:
+                    product_obj = Product.objects.filter(id=row['product_id']).first()
+                except (TypeError, ValueError):
+                    product_obj = None
+
+            proposal_product_objects.append(
+                ProposalProduct(
+                    coefficient=row['coefficient'],
+                    quantity=row['quantity'],
+                    unit_price=row['unit_price'],
+                    commercial_proposal=commercial_proposal,
+                    product=product_obj,
+                )
             )
-            for row in proposal_rows
-        ])
+
+        ProposalProduct.objects.bulk_create(proposal_product_objects)
 
     for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition'):
         if session_key in request.session:
@@ -667,3 +680,80 @@ def validate_proposition_page(request):
     request.session.modified = True
 
     return redirect('new_proposition_page')
+
+@require_GET
+@login_required(login_url='login_user_page')
+def propositions_page(request):
+    client_id= request.GET.get('client_id', '').strip()
+    if client_id:
+        client_id_int = int(client_id)
+        all_proposals = CommercialProposal.objects.filter(client_id=client_id_int)
+    else:
+        all_proposals = CommercialProposal.objects.all()
+    all_clients=Client.objects.all()
+    return render(
+        request, 
+        "views/propositions.html",
+        {
+            'proposals': all_proposals,
+            'clients': all_clients
+        }
+    )
+    
+@require_GET
+@login_required(login_url='login_user_page')
+def proposition_detail(request):
+    proposal_id = request.GET.get('proposal_id', '').strip()
+
+    commercialProposal = CommercialProposal.objects.filter(id=proposal_id).first()
+    if commercialProposal is None:
+        return redirect('propositions_page')
+
+    summary_by_category = {}
+
+    for proposal_product in commercialProposal.proposal_products.all():
+        quantity = max(0.0, float(proposal_product.quantity))
+        coefficient = max(0.0, float(proposal_product.coefficient))
+        sale_unit_price = max(0.0, float(proposal_product.unit_price))
+        product_total = quantity * coefficient * sale_unit_price
+
+        category_name = 'Non catégorisé'
+        designation = f"Produit {proposal_product.id}"
+
+        if proposal_product.product is not None:
+            category_name = proposal_product.product.category.name or 'Non catégorisé'
+            designation = proposal_product.product.designation or designation
+
+        if category_name not in summary_by_category:
+            summary_by_category[category_name] = {
+                'name': category_name,
+                'items': [],
+                'total': 0.0,
+            }
+
+        summary_by_category[category_name]['items'].append({
+            'designation': designation,
+            'quantity': quantity,
+            'sale_unit_price': sale_unit_price,
+            'coefficient': coefficient,
+            'total': product_total,
+        })
+        summary_by_category[category_name]['total'] += product_total
+
+    summary_categories = list(summary_by_category.values())
+
+    proposal_total = float(commercialProposal.amount_ht or 0)
+    tva_amount = max(0.0, float(commercialProposal.amount_ttc or 0) - proposal_total)
+    total_ttc = float(commercialProposal.amount_ttc or 0)
+
+    return render(
+        request, 
+        "views/proposition_detail.html",
+        {
+            'proposal': commercialProposal,
+            'summary_categories': summary_categories,
+            'proposal_total': proposal_total,
+            'tva_amount': tva_amount,
+            'total_ttc': total_ttc,
+        }
+    )

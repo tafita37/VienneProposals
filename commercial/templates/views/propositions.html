@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Propositions - Vienne Agencement{% endblock %}
+
+{% block header_title %}Mes Propositions{% endblock %}
+
+{% block header_subtitle %}Historique et gestion de vos propositions{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/propositions.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/propositions.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Liste des propositions</h2>
+    <form action="{% url 'propositions_page' %}" method="get">
+        <div style="display: flex; gap: 1rem; align-items: end; margin: 1rem 0 1.5rem 0; flex-wrap: wrap; padding: 0.75rem 0;">
+        <div>
+            <select id="client-filter" name="client_id" style="min-width: 260px; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-dark); line-height: 1.2;">
+                <option value="">Tous les clients</option>
+                {% for client in clients %}
+                <option value="{{ client.id }}">{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn" style="background: var(--accent); color: #fff; padding: 0.65rem 1rem;">
+            Filtrer
+        </button>
+    </div>
+    </form>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Montant HT</th>
+                    <!-- <th>Statut</th> -->
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {%for proposition in proposals %}
+                <tr>
+                    <td><strong>PROP-2026-{{ proposition.id }}</strong></td>
+                    <td>{{ proposition.client.name }}</td>
+                    <td>{{ proposition.date_proposal }}</td>
+                    <td><strong>{{proposition.amount_ttc|floatformat:2}} €</strong></td>
+                    <!-- <td><span class="badge badge-success">Validée</span></td> -->
+                    <td><a href="{% url 'proposition_detail_page' %}?proposal_id={{ proposition.id }}" class="btn"
+                            style="background: var(--accent); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Voir</a>
+                    </td>
+                </tr>
+                {%endfor%}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Créer une nouvelle proposition</h2>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">Utilisez le catalogue pour sélectionner les
+        produits et créer une proposition personnalisée.</p>
+    <a href="{% url 'new_proposition_page' %}" class="btn btn-primary" style="display: inline-block;">✏️ Nouvelle
+        proposition</a>
+</div>
+{% endblock %}

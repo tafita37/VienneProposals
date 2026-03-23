@@ -111,8 +111,10 @@ CREATE TABLE proposal_product(
    coefficient DOUBLE PRECISION NOT NULL,
    quantity DOUBLE PRECISION NOT NULL,
    unit_price DOUBLE PRECISION NOT NULL,
+   product_id INTEGER NOT NULL,
    commercial_proposal_id INTEGER NOT NULL,
    PRIMARY KEY(id),
+   FOREIGN KEY(product_id) REFERENCES product(id),
    FOREIGN KEY(commercial_proposal_id) REFERENCES commercial_proposal(id)
 );
 
