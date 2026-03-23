@@ -10,5 +10,9 @@ class CommercialProposal(models.Model):
 	amount_ttc = models.FloatField()  # DOUBLE PRECISION en SQL
 	client = models.ForeignKey(Client, on_delete=models.PROTECT, db_column='client_id')
 
+	@property
+	def proposal_product_list(self):
+		return list(self.proposal_products.all())
+
 	class Meta:
 		db_table = 'commercial_proposal'
