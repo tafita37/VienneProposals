@@ -124,9 +124,4 @@ document.addEventListener('DOMContentLoaded', () => {
 			document.getElementById('productModal').style.display = 'block';
 		});
 	}
-
-	const saveProductBtn = document.getElementById('saveProductBtn');
-	if (saveProductBtn) {
-		saveProductBtn.addEventListener('click', handleSaveProduct);
-	}
 });

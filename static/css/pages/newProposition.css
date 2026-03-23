@@ -7,6 +7,15 @@
 	margin-bottom: 2rem;
 }
 
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
 .form-section {
 	background: white;
 	padding: 1.5rem;
