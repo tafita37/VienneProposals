@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Catalogue - Vienne Agencement{% endblock %}
+
+{% block header_title %}Catalogue Produits{% endblock %}
+
+{% block header_subtitle %}Gérez votre sélection de produits{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/catalogue.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/catalogue.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Catalogue Produits</h2>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label>Catégorie</label>
+            <select id="categoryFilter" name="category_id">
+                <option value="">Toutes les catégories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Rechercher</label>
+            <input type="text" placeholder="Nom du produit..." id="searchFilter" name="nom">
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Désignation</th>
+                    <th>Catégorie</th>
+                    <th>Unité</th>
+                    <th>Prix unitaire</th>
+                    <th>Coefficient</th>
+                    <th>Quantité</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="catalogueTable">
+                {% for product in products %}
+                <tr data-category-id="{{ product.category.id }}" data-product-id="{{ product.id }}">
+                    <td>{{ product.designation }}</td>
+                    <td>{{ product.category.name }}</td>
+                    <td>{{ product.unit.name }}</td>
+                    <td>{{ product.sale_unit_price }} €</td>
+                    {% localize off %}
+                        <td><input type="number" class="input-coefficient" value="{{ product.catalogue_coefficient }}" min="0.1"
+                            step="0.1"></td>
+                        <td><input type="number" class="input-quantity" value="{{ product.catalogue_quantity }}" min="0"></td>
+                    {% endlocalize %}
+                    <td class="total-cell">0 €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+        <a class="btn btn-primary" id="createProposalBtn">Créer une proposition</a>
+    </div>
+</div>
+{% endblock %}

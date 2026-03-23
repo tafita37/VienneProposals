@@ -72,15 +72,6 @@ function ensureDemoUser() {
     saveUsers(users);
 }
 
-function getClients() {
-    const raw = localStorage.getItem('clients');
-    try {
-        return raw ? JSON.parse(raw) : [];
-    } catch (err) {
-        return [];
-    }
-}
-
 function saveClients(clients) {
     localStorage.setItem('clients', JSON.stringify(clients));
 }
@@ -89,25 +80,6 @@ function generateId() {
     return 'c_' + Math.random().toString(16).slice(2) + Date.now();
 }
 
-function findClient(id) {
-    if (!id) return null;
-    return getClients().find(c => c.id === id);
-}
-
-function ensureDemoClient() {
-    if (getClients().length > 0) return;
-
-    const clients = [
-        {
-            id: generateId(),
-            name: 'Magasin Concept Store',
-            address: '12 Rue de la Paix, 75000 Paris',
-            phone: '01 23 45 67 89',
-            email: 'contact@conceptstore.fr'
-        }
-    ];
-    saveClients(clients);
-}
 function getCategories() {
     const raw = localStorage.getItem('categories');
     try {
@@ -141,8 +113,6 @@ function saveProducts(products) {
 }
 
 function ensureDefaultProducts() {
-    if (getProducts().length > 0) return;
-
     saveProducts(defaultProducts);
 }
 
@@ -154,38 +124,6 @@ function getCategoryLabel(categoryCode) {
 
 function getCatalogData() {
     return getProducts();
-}
-function populateClientSelect(selectId, onChange) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    const clients = getClients();
-    select.innerHTML = '<option value="">Sélectionner un client</option>' +
-        clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-    if (typeof onChange === 'function') {
-        select.addEventListener('change', () => onChange(select.value));
-    }
-}
-
-function fillClientDetails(clientId) {
-    const client = findClient(clientId);
-    const address = document.getElementById('clientAddress');
-    const phone = document.getElementById('clientPhone');
-    const email = document.getElementById('clientEmail');
-
-    if (!address || !phone || !email) return;
-
-    if (!client) {
-        address.value = '';
-        phone.value = '';
-        email.value = '';
-        return;
-    }
-
-    address.value = client.address || '';
-    phone.value = client.phone || '';
-    email.value = client.email || '';
 }
 
 String.prototype.capitalize = function() {
@@ -378,8 +316,6 @@ window.addEventListener('resize', function() {
 // ===== INITIALISATION =====
 document.addEventListener('DOMContentLoaded', () => {
     ensureDemoUser();
-    ensureDemoClient();
-    ensureDefaultCategories();
     ensureDefaultProducts();
     initSidebarUserMenu();
     initMobileSidebarScrollFallback();

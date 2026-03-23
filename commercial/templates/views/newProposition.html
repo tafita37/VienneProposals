@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Nouvelle Proposition - Vienne Agencement{% endblock %}
+
+{% block header_title %}Nouvelle proposition{% endblock %}
+
+{% block header_subtitle %}Créez une nouvelle proposition commerciale{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/newProposition.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/newProposition.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="proposition-header">
+    <div class="form-section">
+        <h3>Informations Client</h3>
+        <div class="form-group">
+            <label>Client</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <select id="clientSelect"
+                    style="flex: 1 1 240px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <option value="">Sélectionner un client</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}" {% if selected_client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+                <a href="create-client.html" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">+
+                    Client</a>
+                <a href="clients.html" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">Liste</a>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" id="clientAddress" placeholder="Adresse" readonly>
+        </div>
+        <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" id="clientPhone" placeholder="Téléphone" readonly>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="clientEmail" placeholder="Email" readonly>
+        </div>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+        <h3>Options</h3>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Date de proposition</label>
+            <input type="date" id="dateProposal"
+                value="{{ proposal_date_proposition }}"
+                style="max-width: 100%; margin-right: 0.75rem; cursor: pointer;">
+        </div>
+        <div>
+            <a href="{% url 'appercu_proposition_page' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
+                Proposition</a>
+        </div>
+    </div>
+</div>
+<!-- SECTION SAISIE PRODUITS -->
+<div class="product-input-section"
+    style="background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow);">
+    <h3 style="margin-bottom: 1.5rem; color: var(--primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+        <span>📝</span> Saisie des produits
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 1rem; align-items: end;">
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Catégorie</label>
+            <select id="productCategorySelect" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                <option value="">Sélectionner</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Produit</label>
+            <select id="productSelect" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                <option value="">Sélectionner</option>
+            </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Quantité</label>
+            <input id="productQuantity" type="number" value="1" min="1" step="1"
+                style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Coefficient</label>
+            <input id="productCoefficient" type="number" value="1" min="0.1" step="0.1"
+                style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+        </div>
+
+        <div>
+            <button id="addProductBtn"
+                style="background: var(--success); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; height: 45px; white-space: nowrap;">
+                ➕ Ajouter
+            </button>
+        </div>
+    </div>
+
+    <!-- Liste des produits saisis (exemple statique) -->
+    <div style="margin-top: 2rem;">
+        <h4 style="margin-bottom: 1rem; font-size: 1rem;">Produits ajoutés :</h4>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Catégorie</th>
+                    <th style="padding: 0.75rem; text-align: left;">Produit</th>
+                    <th style="padding: 0.75rem; text-align: left;">Qté</th>
+                    <th style="padding: 0.75rem; text-align: left;">Prix unitaire</th>
+                    <th style="padding: 0.75rem; text-align: left;">Coeff</th>
+                    <th style="padding: 0.75rem; text-align: left;">Total</th>
+                    <th style="padding: 0.75rem; text-align: left;"></th>
+                </tr>
+            </thead>
+            <tbody id="addedProductsBody">
+                <!-- Exemple de ligne de produit -->
+                {%for proposal in proposal %}
+                <tr data-product-id="{{ proposal.product.id }}">
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.category_name }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.designation }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.quantity }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.coefficient|floatformat:2 }}</td>
+                    <td
+                        style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">
+                        {{ proposal.product.total|floatformat:2 }} €</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <button type="button" data-action="remove-product" data-product-id="{{ proposal.product.id }}"
+                            style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem;">🗑️</button>
+                    </td>
+                </tr>
+                {%endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f9f7f4; font-weight: 600;">
+                    <td colspan="5" style="padding: 0.75rem; text-align: right;">Total :</td>
+                    <td id="addedProductsTotal" style="padding: 0.75rem; color: var(--accent);">{{ proposal_total|floatformat:2 }} €</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<div class="summary-by-category" id="summaryContainer">
+    <h2 style="margin-bottom: 1.5rem; color: var(--text-dark);">Récapitulatif par Catégorie</h2>
+    {% if summary_categories %}
+    {% for category in summary_categories %}
+    <div class="summary-section">
+        <div class="summary-category-title">
+            <span>{{ category.name }}</span>
+            <span>{{ category.total|floatformat:2 }} €</span>
+        </div>
+        {% for item in category.items %}
+        <div class="summary-item">
+            <div class="summary-item-name">{{ item.designation }}</div>
+            <div class="summary-item-qty">{{ item.quantity|floatformat:2 }}</div>
+            <div class="summary-item-total">{{ item.total|floatformat:2 }} €</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color: var(--text-light); text-align: center; padding: 2rem;">
+        Veuillez aller au 
+        <a 
+            href="{% url 'catalogue_page' %}" 
+            style="color: var(--accent); text-decoration: underline;"
+        >
+            catalogue
+        </a>
+        pour sélectionner
+        des produits...
+    </p>
+    {% endif %}
+</div>
+
+<div class="proposal-total">
+    Total estimé : <span id="totalAmount">{{ proposal_total|floatformat:2 }} €</span>
+</div>
+
+<div class="card">
+    <h3>Tableau des produits sélectionnés</h3>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Coefficient</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="proposalSummaryTable">
+                {% if proposal_table_rows %}
+                {% for row in proposal_table_rows %}
+                    {% if row.is_category %}
+                    <tr style="background: #f9f7f4; font-weight: 600;">
+                        <td>{{ row.category_name }}</td>
+                        <td colspan="5"></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td></td>
+                        <td>{{ row.designation }}</td>
+                        <td>{{ row.quantity|floatformat:2 }}</td>
+                        <td>{{ row.sale_unit_price|floatformat:2 }} €</td>
+                        <td>{{ row.coefficient|floatformat:2 }}</td>
+                        <td class="price-calculated">{{ row.total|floatformat:2 }} €</td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-light);">
+                        Aucun
+                        produit sélectionné</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="action-buttons">
+    <!-- <a href="propositions.html" class="btn btn-secondary">← Retour</a> -->
+    <a href="{% url 'appercu_proposition_page' %}" class="btn btn-primary js-preview-proposal-link">Aperçu et valider</a>
+</div>
+
+{{ proposal|json_script:"initial-proposal-data" }}
+{% endblock %}

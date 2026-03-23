@@ -1,53 +1,6 @@
 CREATE DATABASE vienne_proposal;
 \c vienne_proposal
 
-CREATE TABLE category(
-   id SERIAL,
-   name VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(id),
-   UNIQUE(name)
-);
-
-CREATE TABLE unit(
-   id SERIAL,
-   name VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(id),
-   UNIQUE(name)
-);
-
-CREATE TABLE company_type(
-   id SERIAL,
-   name VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(id),
-   UNIQUE(name)
-);
-
-CREATE TABLE product(
-   id SERIAL,
-   designation TEXT NOT NULL,
-   unit_price DOUBLE PRECISION NOT NULL,
-   coefficient NUMERIC(15,2)   NOT NULL,
-   id_1 INTEGER NOT NULL,
-   id_2 INTEGER NOT NULL,
-   PRIMARY KEY(id),
-   UNIQUE(designation),
-   FOREIGN KEY(id_1) REFERENCES unit(id),
-   FOREIGN KEY(id_2) REFERENCES category(id)
-);
-
-CREATE TABLE client(
-   id SERIAL,
-   address VARCHAR(100)  NOT NULL,
-   email VARCHAR(100)  NOT NULL,
-   website_url TEXT NOT NULL,
-   phone VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(id),
-   UNIQUE(address),
-   UNIQUE(email),
-   UNIQUE(website_url),
-   UNIQUE(phone)
-);
-
 CREATE TABLE role(
    id SERIAL,
    name VARCHAR(30)  NOT NULL,
@@ -66,16 +19,65 @@ CREATE TABLE users(
    UNIQUE(email)
 );
 
+CREATE TABLE category(
+   id SERIAL,
+   name VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(name)
+);
+
+CREATE TABLE unit(
+   id SERIAL,
+   name VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(name)
+);
+
+CREATE TABLE product(
+   id SERIAL,
+   designation TEXT NOT NULL,
+   purchase_unit_price DOUBLE PRECISION NOT NULL,
+   sale_unit_price DOUBLE PRECISION NOT NULL,
+   coefficient NUMERIC(15,2) NOT NULL,
+   unit_id INTEGER NOT NULL,
+   category_id INTEGER NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(designation),
+   FOREIGN KEY(unit_id) REFERENCES unit(id),
+   FOREIGN KEY(category_id) REFERENCES category(id)
+);
+
+CREATE TABLE client(
+   id SERIAL,
+   name VARCHAR(100)  NOT NULL,
+   address VARCHAR(100)  NOT NULL,
+   email VARCHAR(100)  NOT NULL,
+   website_url TEXT NOT NULL,
+   phone VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(address),
+   UNIQUE(email),
+   UNIQUE(website_url),
+   UNIQUE(phone)
+);
+
 CREATE TABLE individual(
    id SERIAL,
    first_name VARCHAR(100)  NOT NULL,
    last_name VARCHAR(100)  NOT NULL,
    birth_date DATE NOT NULL,
    id_card_number VARCHAR(20)  NOT NULL,
-   id_1 INTEGER NOT NULL,
+   client_id INTEGER NOT NULL,
    PRIMARY KEY(id),
    UNIQUE(id_card_number),
-   FOREIGN KEY(id_1) REFERENCES client(id)
+   FOREIGN KEY(client_id) REFERENCES client(id)
+);
+
+CREATE TABLE company_type(
+   id SERIAL,
+   name VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(name)
 );
 
 CREATE TABLE company(
@@ -84,25 +86,24 @@ CREATE TABLE company(
    registration_number VARCHAR(50)  NOT NULL,
    tax_identification_number VARCHAR(50)  NOT NULL,
    created_at DATE NOT NULL,
-   id_1 INTEGER NOT NULL,
-   id_2 INTEGER NOT NULL,
+   company_type_id INTEGER NOT NULL,
+   client_id INTEGER NOT NULL,
    PRIMARY KEY(id),
    UNIQUE(name),
    UNIQUE(registration_number),
    UNIQUE(tax_identification_number),
-   FOREIGN KEY(id_1) REFERENCES company_type(id),
-   FOREIGN KEY(id_2) REFERENCES client(id)
+   FOREIGN KEY(company_type_id) REFERENCES company_type(id),
+   FOREIGN KEY(client_id) REFERENCES client(id)
 );
 
 CREATE TABLE commercial_proposal(
    id SERIAL,
-   has_vat BOOLEAN NOT NULL,
    date_proposal DATE NOT NULL,
    amount_ht DOUBLE PRECISION NOT NULL,
    amount_ttc DOUBLE PRECISION NOT NULL,
-   id_1 INTEGER NOT NULL,
+   client_id INTEGER NOT NULL,
    PRIMARY KEY(id),
-   FOREIGN KEY(id_1) REFERENCES client(id)
+   FOREIGN KEY(client_id) REFERENCES client(id)
 );
 
 CREATE TABLE proposal_product(
@@ -110,10 +111,12 @@ CREATE TABLE proposal_product(
    coefficient DOUBLE PRECISION NOT NULL,
    quantity DOUBLE PRECISION NOT NULL,
    unit_price DOUBLE PRECISION NOT NULL,
-   id_1 INTEGER NOT NULL,
+   commercial_proposal_id INTEGER NOT NULL,
    PRIMARY KEY(id),
-   FOREIGN KEY(id_1) REFERENCES commercial_proposal(id)
+   FOREIGN KEY(commercial_proposal_id) REFERENCES commercial_proposal(id)
 );
+
+-- 
 
 CREATE TABLE excel_import(
    id SERIAL,
