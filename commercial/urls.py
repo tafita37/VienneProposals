@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, get_client_by_id_api, get_products_api, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_proposal_options_api, save_selected_products_api, validate_proposition_page
 from commercial.controllers.StatController import dashboard_page
@@ -16,4 +16,5 @@ urlpatterns = [
     path('validate_proposition_page/', validate_proposition_page, name='validate_proposition_page'),
     path('propositions_page/', propositions_page, name='propositions_page'),
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
+    path('client/', include('commercial.url_crud.client_url')),
 ]
