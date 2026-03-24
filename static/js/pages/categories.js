@@ -1,96 +1,11 @@
-﻿function handleSaveCategory() {
-	const messageEl = document.getElementById('modalMessage');
-	if (messageEl) {
-		messageEl.textContent = '';
-		messageEl.className = 'form-message';
-	}
+﻿
 
-	const code = document.getElementById('categoryCode')?.value.trim();
-	const name = document.getElementById('categoryName')?.value.trim();
-
-	if (!code || !name) {
-		if (messageEl) {
-			messageEl.textContent = 'Veuillez remplir tous les champs.';
-			messageEl.classList.add('error');
-		}
-		return;
-	}
-
-	const categories = getCategories();
-	const existing = categories.find(c => c.code === code);
-
-	if (existing && !document.getElementById('categoryModal').dataset.editId) {
-		if (messageEl) {
-			messageEl.textContent = 'Une catégorie avec ce code existe déjà.';
-			messageEl.classList.add('error');
-		}
-		return;
-	}
-
-	if (document.getElementById('categoryModal').dataset.editId) {
-		const editId = document.getElementById('categoryModal').dataset.editId;
-		const idx = categories.findIndex(c => c.code === editId);
-		if (idx !== -1) {
-			categories[idx] = { code, name };
-			saveCategories(categories);
-			closeCategoryModal();
-			renderCategoriesTable();
-		}
-	} else {
-		categories.push({ code, name });
-		saveCategories(categories);
-		closeCategoryModal();
-		renderCategoriesTable();
-	}
-}
-
-function handleEditCategory(code) {
-	const categories = getCategories();
-	const category = categories.find(c => c.code === code);
-	if (!category) return;
-
-	document.getElementById('categoryCode').value = category.code;
-	document.getElementById('categoryName').value = category.name;
+function handleEditCategory(id, name) {
+	document.getElementById('categoryId').value = id;
+	document.getElementById('categoryName').value = name;
 	document.getElementById('modalTitle').textContent = 'Modifier la catégorie';
-	document.getElementById('categoryModal').dataset.editId = code;
+	document.getElementById('categoryModal').dataset.editId = id;
 	document.getElementById('categoryModal').style.display = 'block';
-}
-
-function handleDeleteCategory(code) {
-	if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) return;
-
-	const categories = getCategories().filter(c => c.code !== code);
-	saveCategories(categories);
-
-	const messageEl = document.getElementById('categoriesMessage');
-	if (messageEl) {
-		messageEl.textContent = 'Catégorie supprimée.';
-		messageEl.classList.add('success');
-	}
-
-	renderCategoriesTable();
-}
-
-function renderCategoriesTable() {
-	const tbody = document.querySelector('#categoriesTable tbody');
-	if (!tbody) return;
-
-	const categories = getCategories();
-	if (categories.length === 0) {
-		tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:2rem; color: var(--text-light);">Aucune catégorie disponible. Ajoutez-en une.</td></tr>`;
-		return;
-	}
-
-	tbody.innerHTML = categories.map(category => `
-        <tr>
-            <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${category.code}</td>
-            <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${category.name}</td>
-            <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                <button class="btn btn-secondary" style="margin-right: 0.5rem;" onclick="handleEditCategory('${category.code}')">✏️</button>
-                <button class="btn btn-secondary" style="background: var(--warning);" onclick="handleDeleteCategory('${category.code}')">🗑️</button>
-            </td>
-        </tr>
-    `).join('');
 }
 
 function closeCategoryModal() {
@@ -104,19 +19,66 @@ function closeCategoryModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-	if (document.getElementById('categoriesTable')) {
-		renderCategoriesTable();
-	}
-
 	const addCategoryBtn = document.getElementById('addCategoryBtn');
+	const deleteModal = document.getElementById('deleteConfirmModal');
+	const deleteText = document.getElementById('deleteConfirmText');
+	const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+	const deleteCancelBtn = document.getElementById('deleteCancelBtn');
+	const deleteButtons = Array.from(document.querySelectorAll('.js-delete-category'));
+
 	if (addCategoryBtn) {
 		addCategoryBtn.addEventListener('click', () => {
 			document.getElementById('categoryModal').style.display = 'block';
 		});
 	}
 
-	const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-	if (saveCategoryBtn) {
-		saveCategoryBtn.addEventListener('click', handleSaveCategory);
+	if (!deleteModal || !deleteText || !deleteConfirmBtn || !deleteCancelBtn || deleteButtons.length === 0) {
+		return;
 	}
+
+	deleteModal.classList.add('hidden');
+	deleteModal.style.display = 'none';
+	deleteModal.setAttribute('aria-hidden', 'true');
+
+	const closeDeleteModal = () => {
+		deleteModal.classList.add('hidden');
+		deleteModal.style.display = 'none';
+		deleteModal.setAttribute('aria-hidden', 'true');
+		deleteConfirmBtn.setAttribute('href', '#');
+	};
+
+	const openDeleteModal = (deleteUrl, categoryName) => {
+		const safeName = categoryName && categoryName.trim() ? categoryName.trim() : 'cette catégorie';
+		deleteText.textContent = `Voulez-vous vraiment supprimer ${safeName} ?`;
+		deleteConfirmBtn.setAttribute('href', deleteUrl);
+		deleteModal.classList.remove('hidden');
+		deleteModal.style.display = 'flex';
+		deleteModal.setAttribute('aria-hidden', 'false');
+	};
+
+	deleteButtons.forEach((button) => {
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+			const deleteUrl = button.getAttribute('href');
+			const categoryName = button.getAttribute('data-category-name') || 'cette catégorie';
+			if (!deleteUrl) return;
+			openDeleteModal(deleteUrl, categoryName);
+		});
+	});
+
+	deleteCancelBtn.addEventListener('click', closeDeleteModal);
+
+	deleteModal.addEventListener('click', (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (target.dataset.closeDeleteModal === 'true') {
+			closeDeleteModal();
+		}
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key === 'Escape' && !deleteModal.classList.contains('hidden')) {
+			closeDeleteModal();
+		}
+	});
 });

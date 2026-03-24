@@ -2,6 +2,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
+from commercial.metier.Category import Category
 from commercial.metier.CompanyType import CompanyType
 from commercial.metier.Individual import Individual
 from commercial.metier.Client import Client
@@ -15,6 +16,16 @@ def liste_client_page(request):
         request, 
         "views/clients.html",
         {"clients": all_clients}
+    )
+    
+@require_GET
+@login_required(login_url='login_user_page')
+def liste_categorie_page(request):
+    all_categories = Category.objects.all()
+    return render(
+        request, 
+        "views/categories.html",
+        {"categories": all_categories}
     )
     
 @require_GET
@@ -110,6 +121,19 @@ def save_client(request):
 
 @require_POST
 @login_required(login_url='login_user_page')
+def saveCategorie(request):
+    id= request.POST.get('id')
+    name = request.POST.get('name')
+    if id:
+        category = Category.objects.get(id=id)
+        category.name = name
+    else:
+        category = Category(name=name)
+    category.save()
+    return redirect('liste_categorie_page')
+
+@require_POST
+@login_required(login_url='login_user_page')
 def update_client(request):
     client_id = request.POST.get('client_id')
     if not client_id:
@@ -174,3 +198,12 @@ def delete_client(request):
     if client:
         client.delete()
     return redirect('liste_client_page')
+
+@require_GET
+@login_required(login_url='login_user_page')
+def delete_category(request):
+    category_id= request.GET.get('id')
+    category = Category.objects.filter(id=category_id).first()
+    if category:
+        category.delete()
+    return redirect('liste_categorie_page')

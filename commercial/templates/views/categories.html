@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Catégories - Vienne Agencement{% endblock %}
+
+{% block header_title %}Catégories{% endblock %}
+
+{% block header_subtitle %}Gérez les catégories de produits.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/categories.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/categories.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Liste des catégories</h2>
+        <button id="addCategoryBtn" class="btn btn-primary" style="max-width: 220px;">+ Ajouter une
+            catégorie</button>
+    </div>
+</div>
+
+<div class="card">
+    <div id="categoriesMessage" class="form-message" aria-live="polite"></div>
+    <div style="overflow-x: auto;">
+        <table id="categoriesTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Nom</th>
+                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{category.name}}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <button class="btn btn-secondary" style="margin-right: 0.5rem;"
+                            onclick="handleEditCategory('{{category.id}}', '{{category.name}}')">✏️</button>
+                        <a
+                            href="{% url 'delete_categorie' %}?id={{category.id}}"
+                            class="btn btn-secondary js-delete-category"
+                            style="background: var(--warning);"
+                            data-category-name="{{ category.name }}"
+                        >🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true" style="display: none;">
+    <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+    <div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+        <h3 id="deleteConfirmTitle">Confirmer la suppression</h3>
+        <p id="deleteConfirmText">Voulez-vous vraiment supprimer cette catégorie ?</p>
+        <div class="delete-confirm-actions">
+            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter/modifier catégorie -->
+<div id="categoryModal" class="modal" style="display: none;">
+    <form action="{% url 'save_categorie' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Ajouter une catégorie</h3>
+                <button class="modal-close" onclick="closeCategoryModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalMessage" class="form-message" aria-live="polite"></div>
+                <div class="form-group">
+                    <label for="categoryName">Nom</label>
+                    <input type="text" id="categoryName" placeholder="Ex. Portes intérieures" required name="name" />
+                </div>
+            </div>
+            <input type="hidden" id="categoryId" name="id" />
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCategoryModal()">Annuler</button>
+                <button type="submit" id="saveCategoryBtn" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

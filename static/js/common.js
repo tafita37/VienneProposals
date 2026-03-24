@@ -80,25 +80,6 @@ function generateId() {
     return 'c_' + Math.random().toString(16).slice(2) + Date.now();
 }
 
-function getCategories() {
-    const raw = localStorage.getItem('categories');
-    try {
-        return raw ? JSON.parse(raw) : [];
-    } catch (err) {
-        return [];
-    }
-}
-
-function saveCategories(categories) {
-    localStorage.setItem('categories', JSON.stringify(categories));
-}
-
-function ensureDefaultCategories() {
-    if (getCategories().length > 0) return;
-
-    saveCategories(defaultCategories);
-}
-
 function getProducts() {
     const raw = localStorage.getItem('products');
     try {
@@ -114,12 +95,6 @@ function saveProducts(products) {
 
 function ensureDefaultProducts() {
     saveProducts(defaultProducts);
-}
-
-function getCategoryLabel(categoryCode) {
-    const categories = getCategories();
-    const category = categories.find(c => c.code === categoryCode);
-    return category ? category.name : categoryCode;
 }
 
 function getCatalogData() {
