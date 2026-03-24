@@ -17,4 +17,5 @@ urlpatterns = [
     path('propositions_page/', propositions_page, name='propositions_page'),
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
     path('client/', include('commercial.url_crud.client_url')),
+    path('category/', include('commercial.url_crud.categorie_url')),
 ]
