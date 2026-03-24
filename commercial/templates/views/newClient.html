@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Créer un client - Vienne Agencement{% endblock %}
+
+{% block header_title %}Créer un client {% endblock %}
+
+{% block header_subtitle %}Ajoutez un client à votre base.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/newClient.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/newClient.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Informations du client</h2>
+    <div id="clientMessage" class="form-message" aria-live="polite"></div>
+
+    <div class="stepper" aria-label="Progression du formulaire">
+        <div class="stepper-item active" data-step-indicator="1">1. Informations générales</div>
+        <div class="stepper-item" data-step-indicator="2">2. Détails du client</div>
+        <div class="stepper-item" data-step-indicator="3">3. Validation</div>
+    </div>
+
+    <form action="{% url 'save_client' %}" method="post">
+        {% csrf_token %}
+        <div class="wizard-step active" data-step="1">
+            <div class="form-group">
+                <label for="clientAddress">Adresse</label>
+                <input type="text" id="clientAddress" name="address" placeholder="Ex. 12 rue de la Paix, 75000 Paris"
+                    required />
+            </div>
+            <div class="form-group">
+                <label for="clientPhone">Téléphone</label>
+                <input type="text" id="clientPhone" name="phone" placeholder="Ex. 01 23 45 67 89" required />
+            </div>
+            <div class="form-group">
+                <label for="clientEmail">Email</label>
+                <input type="email" id="clientEmail" name="email" placeholder="Ex. contact@exemple.fr" required />
+            </div>
+            <div class="form-group">
+                <label for="clientWebsite">Site web</label>
+                <input 
+                    type="url" 
+                    id="clientWebsite" 
+                    name="website_url" 
+                    placeholder="Ex. https://www.exemple.fr"
+                />
+            </div>
+        </div>
+
+        <div class="wizard-step" data-step="2">
+            <div class="form-group">
+                <label for="clientType">Type de client</label>
+                <select id="clientType" name="is_company" required>
+                    <option value="">Sélectionner un type</option>
+                    <option value="0">Personne physique</option>
+                    <option value="1">Personne morale</option>
+                </select>
+            </div>
+
+            <div id="individualSection" class="client-type-section">
+                <h3>Informations personne physique</h3>
+                <div class="form-group">
+                    <label for="individualFirstName">Prénom</label>
+                    <input type="text" id="individualFirstName" name="first_name" data-required-when-visible="true"
+                        placeholder="Ex. Jean" />
+                </div>
+                <div class="form-group">
+                    <label for="individualLastName">Nom</label>
+                    <input type="text" id="individualLastName" name="last_name" data-required-when-visible="true"
+                        placeholder="Ex. Dupont" />
+                </div>
+                <div class="form-group">
+                    <label for="individualBirthDate">Date de naissance</label>
+                    <input type="date" id="individualBirthDate" name="birth_date" data-required-when-visible="true">
+                </div>
+                <div class="form-group">
+                    <label for="individualIdCardNumber">Numéro de carte d'identité</label>
+                    <input type="text" id="individualIdCardNumber" name="id_card_number"
+                        data-required-when-visible="true" placeholder="Ex. AB123456">
+                </div>
+            </div>
+
+            <div id="companySection" class="client-type-section">
+                <h3>Informations personne morale</h3>
+                <div class="form-group">
+                    <label for="companyName">Raison sociale</label>
+                    <input type="text" id="companyName" name="company_name" data-required-when-visible="true"
+                        placeholder="Ex. Atelier Dupont SARL">
+                </div>
+                <div class="form-group">
+                    <label for="companyType">Type d'entreprise</label>
+                    <select id="companyType" name="company_type" data-required-when-visible="true">
+                        <option value="">Sélectionner un type</option>
+                        {% for company_type in company_types %}
+                        <option value="{{ company_type.id }}">{{ company_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="companyRegistrationNumber">Numéro d'enregistrement</label>
+                    <input type="text" id="companyRegistrationNumber" name="registration_number"
+                        data-required-when-visible="true" placeholder="Ex. RCS123456789">
+                </div>
+                <div class="form-group">
+                    <label for="companyTaxIdentificationNumber">Numéro d'identification fiscale</label>
+                    <input type="text" id="companyTaxIdentificationNumber" name="tax_identification_number"
+                        data-required-when-visible="true" placeholder="Ex. FR00123456789">
+                </div>
+                <div class="form-group">
+                    <label for="companyCreatedAt">Date de création</label>
+                    <input type="date" id="companyCreatedAt" name="created_at" data-required-when-visible="true">
+                </div>
+            </div>
+        </div>
+
+        <div class="wizard-step" data-step="3">
+            <h3>Validation</h3>
+            <p>Vérifiez les informations saisies puis enregistrez le client.</p>
+
+            <div class="client-summary-preview">
+                <h4>Aperçu récapitulatif</h4>
+
+                <div class="summary-section">
+                    <h5>Informations communes (client)</h5>
+                    <p><strong>Adresse :</strong> <span id="summaryClientAddress">-</span></p>
+                    <p><strong>Téléphone :</strong> <span id="summaryClientPhone">-</span></p>
+                    <p><strong>Email :</strong> <span id="summaryClientEmail">-</span></p>
+                    <p><strong>Site web :</strong> <span id="summaryClientWebsite">-</span></p>
+                </div>
+
+                <div id="summaryIndividualSection" class="summary-section hidden">
+                    <h5>Informations personne physique</h5>
+                    <p><strong>Prénom :</strong> <span id="summaryIndividualFirstName">-</span></p>
+                    <p><strong>Nom :</strong> <span id="summaryIndividualLastName">-</span></p>
+                    <p><strong>Date de naissance :</strong> <span id="summaryIndividualBirthDate">-</span></p>
+                    <p><strong>N° carte d'identité :</strong> <span id="summaryIndividualIdCardNumber">-</span></p>
+                </div>
+
+                <div id="summaryCompanySection" class="summary-section hidden">
+                    <h5>Informations personne morale</h5>
+                    <p><strong>Raison sociale :</strong> <span id="summaryCompanyName">-</span></p>
+                    <p><strong>Type d'entreprise :</strong> <span id="summaryCompanyType">-</span></p>
+                    <p><strong>N° d'enregistrement :</strong> <span id="summaryCompanyRegistrationNumber">-</span></p>
+                    <p><strong>N° d'identification fiscale :</strong> <span
+                            id="summaryCompanyTaxIdentificationNumber">-</span></p>
+                    <p><strong>Date de création :</strong> <span id="summaryCompanyCreatedAt">-</span></p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+                <button id="saveClient" class="btn btn-primary" style="flex: 1 0 180px;" type="submit">Enregistrer</button>
+                <a href="clients.html" class="btn btn-secondary" style="flex: 1 0 180px; text-align: center;">Liste
+                    des clients</a>
+                <a href="create-proposition.html" class="btn btn-secondary"
+                    style="flex: 1 0 180px; text-align: center;">Nouvelle proposition</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="wizard-navigation">
+        <button id="prevStep" class="btn btn-secondary" type="button">Précédent</button>
+        <button id="nextStep" class="btn btn-primary" type="button">Suivant</button>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Clients - Vienne Agencement{% endblock %}
+
+{% block header_title %}Clients{% endblock %}
+
+{% block header_subtitle %}Gérez vos clients et leurs coordonnées.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/clients.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/clients.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Liste des clients</h2>
+        <a href="{% url 'new_client_page' %}" class="btn btn-primary" style="max-width: 220px;">+ Ajouter un
+            client</a>
+    </div>
+</div>
+
+<div class="card">
+    <div id="clientsMessage" class="form-message" aria-live="polite"></div>
+    <div style="overflow-x: auto;">
+        <table id="clientsTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Nom</th>
+                    <th style="padding: 0.75rem; text-align: left;">Email</th>
+                    <th style="padding: 0.75rem; text-align: left;">Téléphone</th>
+                    <th style="padding: 0.75rem; text-align: left;">Adresse</th>
+                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{ client.name }}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{ client.email|default:'-' }}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{ client.phone|default:'-' }}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{ client.address|default:'-' }}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap;">
+                            <a href="{% url 'edit_client_page' client.id %}" class="btn btn-secondary">✏️</a>
+                            <a
+                                href="{% url 'delete_client' %}?client_id={{ client.id }}"
+                                class="btn btn-secondary js-delete-client"
+                                style="background: var(--warning);"
+                                data-client-name="{{ client.name }}"
+                            >🗑️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true">
+    <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+    <div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+        <h3 id="deleteConfirmTitle">Confirmer la suppression</h3>
+        <p id="deleteConfirmText">Voulez-vous vraiment supprimer ce client ?</p>
+        <div class="delete-confirm-actions">
+            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

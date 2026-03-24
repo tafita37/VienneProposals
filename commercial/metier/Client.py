@@ -8,6 +8,7 @@ class Client(models.Model):
     email = models.EmailField(max_length=100, unique=True)
     website_url = models.TextField(unique=True)
     phone = models.CharField(max_length=50, unique=True)
+    is_company = models.BooleanField(null=False)
 
     class Meta:
         db_table = 'client'

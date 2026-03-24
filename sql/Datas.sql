@@ -36,17 +36,17 @@ INSERT INTO company_type (name) VALUES
 ('EURL'),
 ('Auto-entrepreneur');
 
-INSERT INTO client (name, address, email, website_url, phone) VALUES
-('Jean Dupont', '12 Rue de la Paix, 75002 Paris', 'contact@dupont-entreprise.fr', 'https://www.dupont-entreprise.fr', '+33 1 42 61 12 34'),
-('Marie Martin', '25 Avenue Victor Hugo, 75116 Paris', 'bonjour@martin-design.com', 'https://www.martin-design.com', '+33 1 45 00 23 45'),
-('Pierre Bernard', '8 Place Bellecour, 69002 Lyon', 'info@bernard-conseil.fr', 'https://www.bernard-conseil.fr', '+33 4 78 37 45 67'),
-('Sophie Petit', '35 Rue Saint-Ferréol, 13001 Marseille', 'contact@petit-import.com', 'https://www.petit-import.com', '+33 4 91 54 67 89'),
-('Thomas Robert', '42 Rue Nationale, 59000 Lille', 'hello@robert-tech.fr', 'https://www.robert-tech.fr', '+33 3 20 15 78 90'),
-('SARL Richard & Fils', '5 Rue de la République, 69001 Lyon', 'contact@richard-sante.fr', 'https://www.richard-sante.fr', '+33 4 72 10 34_56'),
-('SAS Simon Distribution', '18 Rue du Faubourg Saint-Honoré, 75008 Paris', 'info@simon-luxe.com', 'https://www.simon-luxe.com', '+33 1 53 43 67 89'),
-('SA Michel Aérospatiale', '3 Place du Capitole, 31000 Toulouse', 'contact@michel-aero.fr', 'https://www.michel-aero.fr', '+33 5 61 23 45 67'),
-('EURL Laurent Vignobles', '27 Rue de la Liberté, 21000 Dijon', 'bonjour@laurent-vins.fr', 'https://www.laurent-vins.fr', '+33 3 80 30 67 89'),
-('Dubois Technologies', '15 Quai des Belges, 34000 Montpellier', 'contact@dubois-tech.com', 'https://www.dubois-tech.com', '+33 4 67 12 34 56');
+INSERT INTO client (name, address, email, website_url, phone, is_company) VALUES
+('Jean Dupont', '12 Rue de la Paix, 75002 Paris', 'contact@dupont-entreprise.fr', 'https://www.dupont-entreprise.fr', '+33 1 42 61 12 34', FALSE),
+('Marie Martin', '25 Avenue Victor Hugo, 75116 Paris', 'bonjour@martin-design.com', 'https://www.martin-design.com', '+33 1 45 00 23 45', FALSE),
+('Pierre Bernard', '8 Place Bellecour, 69002 Lyon', 'info@bernard-conseil.fr', 'https://www.bernard-conseil.fr', '+33 4 78 37 45 67', FALSE),
+('Sophie Petit', '35 Rue Saint-Ferréol, 13001 Marseille', 'contact@petit-import.com', 'https://www.petit-import.com', '+33 4 91 54 67 89', FALSE),
+('Thomas Robert', '42 Rue Nationale, 59000 Lille', 'hello@robert-tech.fr', 'https://www.robert-tech.fr', '+33 3 20 15 78 90', FALSE),
+('SARL Richard & Fils', '5 Rue de la République, 69001 Lyon', 'contact@richard-sante.fr', 'https://www.richard-sante.fr', '+33 4 72 10 34_56', TRUE),
+('SAS Simon Distribution', '18 Rue du Faubourg Saint-Honoré, 75008 Paris', 'info@simon-luxe.com', 'https://www.simon-luxe.com', '+33 1 53 43 67 89', TRUE),
+('SA Michel Aérospatiale', '3 Place du Capitole, 31000 Toulouse', 'contact@michel-aero.fr', 'https://www.michel-aero.fr', '+33 5 61 23 45 67', TRUE),
+('EURL Laurent Vignobles', '27 Rue de la Liberté, 21000 Dijon', 'bonjour@laurent-vins.fr', 'https://www.laurent-vins.fr', '+33 3 80 30 67 89', TRUE),
+('Dubois Technologies', '15 Quai des Belges, 34000 Montpellier', 'contact@dubois-tech.com', 'https://www.dubois-tech.com', '+33 4 67 12 34 56', TRUE);
 
 INSERT INTO individual (first_name, last_name, birth_date, id_card_number, client_id) VALUES
 ('Jean', 'Dupont', '1975-03-15', 'CNI123456789', 1),
