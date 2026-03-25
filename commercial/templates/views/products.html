@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Produits - Vienne Agencement{% endblock %}
+
+{% block header_title %}Produits{% endblock %}
+
+{% block header_subtitle %}Gérez les produits de votre catalogue.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/products.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/products.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Liste des produits</h2>
+        <button id="addProductBtn" class="btn btn-primary" style="max-width: 220px;">+ Ajouter un
+            produit</button>
+    </div>
+</div>
+
+<div class="card">
+    <div id="productsMessage" class="form-message" aria-live="polite"></div>
+    <div style="overflow-x: auto;">
+        <table id="productsTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Désignation</th>
+                    <th style="padding: 0.75rem; text-align: left;">Catégorie</th>
+                    <th style="padding: 0.75rem; text-align: left;">Unité</th>
+                    <th style="padding: 0.75rem; text-align: left;">Prix d'achat</th>
+                    <th style="padding: 0.75rem; text-align: left;">Prix de vente</th>
+                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{product.designation}}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{product.category.name}}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{product.unit.name}}
+                    </td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{product.purchase_unit_price|floatformat:2}} €</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        {{product.sale_unit_price|floatformat:2}} €</td>
+                    {%localize off %}
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <button 
+                            class="btn btn-secondary" 
+                            style="margin-right: 0.5rem;"
+                            onclick="handleEditProduct('{{product.id}}', '{{product.designation}}', {'id': '{{product.category.id}}', 'name': '{{product.category.name}}'}, {'id': '{{product.unit.id}}', 'name': '{{product.unit.name}}'}, '{{product.purchase_unit_price}}', '{{product.sale_unit_price}}')"
+                        >
+                            ✏️
+                        </button>
+                        <a 
+                            class="btn btn-secondary js-delete-product" 
+                            style="background: var(--warning);"
+                            href="{%url 'delete_product' %}?id={{product.id}}"
+                            data-product-name="{{ product.designation }}"
+                        >
+                            🗑️
+                        </a>
+                    </td>
+                    {%endlocalize %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true" style="display: none;">
+    <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+    <div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+        <h3 id="deleteConfirmTitle">Confirmer la suppression</h3>
+        <p id="deleteConfirmText">Voulez-vous vraiment supprimer ce produit ?</p>
+        <div class="delete-confirm-actions">
+            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter/modifier produit -->
+<div id="productModal" class="modal" style="display: none;">
+    <div class="modal-content product-modal-content">
+        <div class="modal-header">
+            <h3 id="productModalTitle">Ajouter un produit</h3>
+            <button class="modal-close" onclick="closeProductModal()">✕</button>
+        </div>
+        <form action="{% url 'saveProduct' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="id" id="productIdInput" value="">
+            <div class="modal-body">
+                <!-- <div id="productModalMessage" class="form-message" aria-live="polite"></div> -->
+                <div class="form-group">
+                    <label for="productName">Désignation</label>
+                    <input 
+                        type="text" 
+                        id="productName" 
+                        placeholder="Ex. Porte battante XL" 
+                        name="designation"
+                        required
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="productCategory">Catégorie</label>
+                    <select 
+                        id="productCategory" 
+                        class="custom-select" 
+                        required 
+                        name="category_id"
+                    >
+                        <option value="">Sélectionner une catégorie</option>
+                        {% for category in categories %}
+                        <option value="{{category.id}}">{{category.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="productUnit">Unité</label>
+                    <select 
+                        id="productUnit" 
+                        class="custom-select" 
+                        required 
+                        name="unit_id"
+                    >
+                        <option value="">Sélectionner une unité</option>
+                        {% for unit in units %}
+                        <option value="{{unit.id}}">{{unit.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="price-fields-row">
+                    <div class="form-group">
+                        <label for="productPurchasePrice">Prix unitaire d'achat (€)</label>
+                        <input 
+                            type="number" 
+                            id="productPurchasePrice" 
+                            placeholder="0.00" 
+                            min="0" 
+                            step="0.01"
+                            required 
+                            name="purchase_unit_price" 
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="coefficient">Coefficient</label>
+                        <input 
+                            type="number" 
+                            id="coefficient" 
+                            placeholder="1.1" 
+                            min="1.1" 
+                            step="0.01" 
+                            required 
+                            name="coefficient"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="productSalePrice">Prix unitaire de vente (€)</label>
+                        <input 
+                            type="number" 
+                            id="productSalePrice" 
+                            placeholder="0.00" 
+                            min="0" 
+                            step="0.01" 
+                            required 
+                            name="sale_unit_price"
+                        />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProductModal()">Annuler</button>
+                <button id="saveProductBtn" type="submit" class="btn btn-primary">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -80,25 +80,12 @@ function generateId() {
     return 'c_' + Math.random().toString(16).slice(2) + Date.now();
 }
 
-function getProducts() {
-    const raw = localStorage.getItem('products');
-    try {
-        return raw ? JSON.parse(raw) : [];
-    } catch (err) {
-        return [];
-    }
-}
-
 function saveProducts(products) {
     localStorage.setItem('products', JSON.stringify(products));
 }
 
 function ensureDefaultProducts() {
     saveProducts(defaultProducts);
-}
-
-function getCatalogData() {
-    return getProducts();
 }
 
 String.prototype.capitalize = function() {

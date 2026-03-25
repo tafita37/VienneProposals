@@ -18,4 +18,5 @@ urlpatterns = [
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
     path('client/', include('commercial.url_crud.client_url')),
     path('category/', include('commercial.url_crud.categorie_url')),
+    path('product/', include('commercial.url_crud.product_url')),
 ]

@@ -1,32 +1,4 @@
-﻿function calculateTotal() {
-    let total = 0;
-    let totalByCategory = {};
-
-    Object.entries(selectedProducts).forEach(([productId, qty]) => {
-        const product = getCatalogData().find(p => p.id == productId);
-        if (!product) return;
-
-        const coefficientInput = document.querySelector(`[data-product-id="${productId}"].input-coefficient`);
-        const coefficient = coefficientInput ? parseFloat(coefficientInput.value) || 1 : 1;
-        const price = product.price * coefficient * qty;
-
-        total += price;
-
-        if (!totalByCategory[product.category]) {
-            totalByCategory[product.category] = [];
-        }
-        totalByCategory[product.category].push({
-            name: product.name,
-            qty: qty,
-            unitPrice: product.price * coefficient,
-            total: price
-        });
-    });
-
-    return { total, totalByCategory };
-}
-
-function clearClientReadonlyFields() {
+﻿function clearClientReadonlyFields() {
     const addressInput = document.getElementById('clientAddress');
     const phoneInput = document.getElementById('clientPhone');
     const emailInput = document.getElementById('clientEmail');
