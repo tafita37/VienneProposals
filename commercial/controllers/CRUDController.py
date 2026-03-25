@@ -7,6 +7,8 @@ from commercial.metier.CompanyType import CompanyType
 from commercial.metier.Individual import Individual
 from commercial.metier.Client import Client
 from commercial.metier.Company import Company
+from commercial.metier.Product import Product
+from commercial.metier.Unit import Unit
 
 @require_GET
 @login_required(login_url='login_user_page')
@@ -26,6 +28,18 @@ def liste_categorie_page(request):
         request, 
         "views/categories.html",
         {"categories": all_categories}
+    )
+    
+@require_GET
+@login_required(login_url='login_user_page')
+def liste_product_page(request):
+    all_products = Product.objects.all()
+    all_categories = Category.objects.all()
+    all_units = Unit.objects.all()
+    return render(
+        request, 
+        "views/products.html",
+        {"products": all_products, "categories": all_categories, "units": all_units}
     )
     
 @require_GET
@@ -134,6 +148,30 @@ def saveCategorie(request):
 
 @require_POST
 @login_required(login_url='login_user_page')
+def saveProduct(request):
+    id= request.POST.get('id')
+    if id:
+        product = Product.objects.get(id=id)
+        product.designation = request.POST.get('designation')
+        product.purchase_unit_price = request.POST.get('purchase_unit_price')
+        product.sale_unit_price = request.POST.get('sale_unit_price')
+        product.coefficent = request.POST.get('coefficient')
+        product.unit_id = request.POST.get('unit_id')
+    else:
+        category_id = request.POST.get('category_id')
+        product = Product(
+            designation=request.POST.get('designation'),
+            purchase_unit_price=request.POST.get('purchase_unit_price'),
+            sale_unit_price=request.POST.get('sale_unit_price'),
+            coefficient=request.POST.get('coefficient'),
+            unit_id=request.POST.get('unit_id'),
+            category_id=category_id
+        )
+    product.save()
+    return redirect('liste_product_page')
+
+@require_POST
+@login_required(login_url='login_user_page')
 def update_client(request):
     client_id = request.POST.get('client_id')
     if not client_id:
@@ -207,3 +245,12 @@ def delete_category(request):
     if category:
         category.delete()
     return redirect('liste_categorie_page')
+
+@require_GET
+@login_required(login_url='login_user_page')
+def delete_product(request):
+    product_id= request.GET.get('id')
+    product = Product.objects.filter(id=product_id).first()
+    if product:
+        product.delete()
+    return redirect('liste_product_page')

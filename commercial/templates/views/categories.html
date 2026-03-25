@@ -43,8 +43,13 @@
                 <tr>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{category.name}}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        <button class="btn btn-secondary" style="margin-right: 0.5rem;"
-                            onclick="handleEditCategory('{{category.id}}', '{{category.name}}')">✏️</button>
+                        <button 
+                            class="btn btn-secondary" 
+                            style="margin-right: 0.5rem;"
+                            onclick="handleEditCategory('{{category.id}}', '{{category.name}}')"
+                        >
+                            ✏️
+                        </button>
                         <a
                             href="{% url 'delete_categorie' %}?id={{category.id}}"
                             class="btn btn-secondary js-delete-category"

@@ -1,1 +1,117 @@
 ﻿/* Styles spécifiques: products */
+
+.delete-confirm-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.delete-confirm-modal.hidden {
+	display: none;
+}
+
+.delete-confirm-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.delete-confirm-dialog {
+	position: relative;
+	width: min(92vw, 480px);
+	background: white;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 1.5rem;
+	box-shadow: var(--shadow);
+}
+
+.delete-confirm-dialog h3 {
+	margin: 0 0 0.35rem;
+	color: var(--text-dark);
+	font-size: 1.1rem;
+}
+
+.delete-confirm-dialog p {
+	margin: 0 0 1.25rem;
+	color: var(--text-light);
+	line-height: 1.45;
+}
+
+.delete-confirm-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	align-items: center;
+}
+
+.delete-confirm-actions .btn {
+	width: auto;
+	min-width: 110px;
+	text-align: center;
+}
+
+.delete-confirm-actions #deleteConfirmBtn {
+	background-color: var(--warning);
+	color: white;
+}
+
+.delete-confirm-actions #deleteConfirmBtn:hover {
+	background-color: var(--accent-light);
+}
+
+.product-modal-content {
+	max-width: 640px;
+	margin: 2rem auto;
+	max-height: none;
+	overflow: visible;
+}
+
+.product-modal-content .modal-body {
+	overflow-y: visible;
+	flex: 0 0 auto;
+}
+
+.product-modal-content #productModalMessage:empty {
+	display: none;
+	margin: 0;
+	min-height: 0;
+}
+
+.product-modal-content .price-fields-row {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.product-modal-content .price-fields-row .form-group {
+	margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+	.delete-confirm-actions {
+		flex-direction: column-reverse;
+		align-items: stretch;
+	}
+
+	.delete-confirm-actions .btn {
+		width: 100%;
+	}
+
+	.product-modal-content {
+		width: calc(100% - 2rem);
+		margin: 1rem auto;
+	}
+
+	.product-modal-content .price-fields-row {
+		grid-template-columns: 1fr;
+		gap: 0;
+	}
+
+	.product-modal-content .price-fields-row .form-group {
+		margin-bottom: 1.5rem;
+	}
+}
