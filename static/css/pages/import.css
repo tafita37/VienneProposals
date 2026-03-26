@@ -1,1 +1,38 @@
 ﻿/* Styles spécifiques: import */
+
+.import-feedback {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	margin-bottom: 1rem;
+}
+
+.import-alert {
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: #ffffff;
+	box-shadow: var(--shadow);
+	padding: 0.85rem 1rem;
+}
+
+.import-alert-content {
+	color: var(--text-dark);
+	font-size: 0.95rem;
+	line-height: 1.35;
+}
+
+.import-alert.error {
+	border-left: 4px solid #c0392b;
+}
+
+.import-alert.warning {
+	border-left: 4px solid var(--warning);
+}
+
+.import-alert.success {
+	border-left: 4px solid var(--success);
+}
+
+.import-alert.excel-row-error .import-alert-content {
+	font-family: Consolas, Monaco, 'Courier New', monospace;
+}

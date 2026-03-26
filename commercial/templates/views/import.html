@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Import Excel - Vienne Agencement{% endblock %}
+
+{% block header_title %}Import Excel{% endblock %}
+
+{% block header_subtitle %}
+Importez votre catalogue de produits.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/import.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/import.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="card">
+        <h2>Importer vos produits</h2>
+        <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+            Importez un fichier Excel contenant votre catalogue de produits pour mettre à jour ou enrichir la
+            base de données.
+        </p>
+
+        {% if messages %}
+        <div class="import-feedback" aria-live="polite">
+            {% for message in messages %}
+            <div class="import-alert {% if 'error' in message.tags %}error{% elif 'warning' in message.tags %}warning{% else %}success{% endif %} {% if 'excel-row-error' in message.tags %}excel-row-error{% endif %}">
+                <div class="import-alert-content">{{ message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div id="uploadArea"
+            style="padding: 2rem; text-align: center; background: #f9f7f4; border-radius: 8px; border: 2px dashed var(--border); cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.background='rgba(13, 115, 119, 0.05)'" onmouseout="this.style.background='#f9f7f4'"
+            onclick="document.getElementById('fileInput').click()">
+            <div id="loadingSpinner"
+                style="display: none; font-size: 2.5rem; margin-bottom: 1rem; animation: spin 1s linear infinite;">
+                ⏳</div>
+            <div id="uploadIcon" style="font-size: 2.5rem; margin-bottom: 1rem;">📁</div>
+            <p id="uploadText" style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 500;">
+                Glissez-déposez votre fichier Excel ici</p>
+            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">ou</p>
+            <button type="button" class="btn btn-primary" style="display: inline-block;">Sélectionner un
+                fichier</button>
+        </div>
+
+        <form id="importForm" method="post" action="{% url 'read_excel_file' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div id="importMessage" class="form-message" aria-live="polite"></div>
+            <input type="file" id="fileInput" name="excel_file" accept=".xlsx,.xlsm" style="display: none;">
+        </form>
+
+        <!-- <div style="margin-top: 2rem; padding: 1.5rem; background: #f9f7f4; border-radius: 8px;">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-dark);">Format attendu :</h3>
+            <table style="width: 100%; margin-bottom: 1rem;">
+                <thead style="background: rgba(13, 115, 119, 0.1);">
+                    <tr>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Colonne</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Nom</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Exemple</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem;">A</td>
+                        <td style="padding: 0.75rem;">Catégorie</td>
+                        <td style="padding: 0.75rem;">Portes intérieures</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem;">B</td>
+                        <td style="padding: 0.75rem;">Désignation produit</td>
+                        <td style="padding: 0.75rem;">Porte battante XL - Finition Chêne</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem;">C</td>
+                        <td style="padding: 0.75rem;">Unité</td>
+                        <td style="padding: 0.75rem;">pce, m, m², fût, pot</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.75rem;">D</td>
+                        <td style="padding: 0.75rem;">Prix unitaire HT</td>
+                        <td style="padding: 0.75rem;">450</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0;">
+                ℹ️ Assurez-vous que votre fichier possède une en-tête et que les données sont correctement
+                formatées.
+            </p>
+        </div> -->
+    </div>
+
+    <!-- <div class="card">
+        <h2>Historique des imports</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Fichier</th>
+                        <th>Produits importés</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>10/03/2026</td>
+                        <td>catalogue_mars.xlsx</td>
+                        <td>15</td>
+                        <td><span class="badge badge-success">Succès</span></td>
+                    </tr>
+                    <tr>
+                        <td>05/03/2026</td>
+                        <td>prix_actualisé.xlsx</td>
+                        <td>45</td>
+                        <td><span class="badge badge-success">Succès</span></td>
+                    </tr>
+                    <tr>
+                        <td>28/02/2026</td>
+                        <td>nouveaux_produits.xlsx</td>
+                        <td>8</td>
+                        <td><span class="badge badge-success">Succès</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> -->
+</div>
+{% endblock %}
