@@ -119,15 +119,17 @@ CREATE TABLE proposal_product(
    FOREIGN KEY(commercial_proposal_id) REFERENCES commercial_proposal(id)
 );
 
--- 
-
 CREATE TABLE excel_import(
    id SERIAL,
    name VARCHAR(50)  NOT NULL,
    date_import DATE NOT NULL,
    product_count INTEGER NOT NULL,
+   category_id INTEGER NOT NULL,
+   FOREIGN KEY(category_id) REFERENCES category(id),
    PRIMARY KEY(id)
 );
+
+-- 
 
 CREATE TABLE users_role(
    id INTEGER,

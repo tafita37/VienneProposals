@@ -4,6 +4,7 @@ const uploadIcon = document.getElementById('uploadIcon');
 const uploadText = document.getElementById('uploadText');
 const uploadArea = document.getElementById('uploadArea');
 const importMessage = document.getElementById('importMessage');
+const importForm = document.getElementById('importForm');
 
 function showMessage(type, message) {
     importMessage.textContent = message;
@@ -32,22 +33,6 @@ function hideLoading() {
     uploadArea.style.opacity = '1';
 }
 
-function simulateImport(file) {
-    showLoading();
-
-    setTimeout(() => {
-        hideLoading();
-
-        if (Math.random() < 0.15) {
-            showMessage('error', `Échec de l'importation du fichier "${file.name}". Veuillez réessayer.`);
-        } else {
-            showMessage('success', `Fichier "${file.name}" importé avec succès !`);
-        }
-
-        fileInput.value = '';
-    }, 3000);
-}
-
 if (fileInput) {
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -55,6 +40,16 @@ if (fileInput) {
             showMessage('error', 'Aucun fichier sélectionné.');
             return;
         }
-        simulateImport(file);
+
+        if (!/\.(xlsx|xlsm)$/i.test(file.name)) {
+            showMessage('error', 'Format non supporté. Utilisez un fichier .xlsx ou .xlsm.');
+            fileInput.value = '';
+            return;
+        }
+
+        showLoading();
+        if (importForm) {
+            importForm.submit();
+        }
     });
 }
