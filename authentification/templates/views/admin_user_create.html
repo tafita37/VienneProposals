@@ -1,0 +1,69 @@
+{% extends 'baseAdmin.html' %}
+
+{% block title %}Créer un utilisateur - Vienne Agencement{% endblock %}
+
+{% block header_title %}Créer un utilisateur{% endblock %}
+
+{% block header_subtitle %}Ajoutez un nouveau compte utilisateur.{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <h2>Nouvel utilisateur</h2>
+
+    {% if messages %}
+    <div style="margin: 1rem 0;">
+        {% for message in messages %}
+        {% if message.tags == 'error' %}
+        <p style="margin: 0.25rem 0; color: #b42318;">{{ message }}</p>
+        {% else %}
+        <p style="margin: 0.25rem 0; color: #087443;">{{ message }}</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form action="{% url 'save_user_admin' %}" method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="first_name">Prénom</label>
+            <input type="text" id="first_name" name="first_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="last_name">Nom</label>
+            <input type="text" id="last_name" name="last_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <div class="form-group">
+            <label for="role_ids">Rôles</label>
+            <select id="role_ids" name="role_ids" multiple size="6" style="min-height: 180px;">
+                {% for role in roles %}
+                <option value="{{ role.id }}">{{ role.name }}</option>
+                {% endfor %}
+            </select>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs rôles.</p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary" style="max-width: 220px;">Enregistrer</button>
+            <a href="{% url 'list_users_admin_page' %}" class="btn btn-secondary" style="max-width: 220px; text-align: center;">Retour à la liste</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

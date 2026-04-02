@@ -1,4 +1,6 @@
 {% load static %}
+{% load admin_tags %}
+{% admin_sidebar_data as admin %}
 
 <aside class="sidebar">
     <button class="sidebar-close-mobile" onclick="closeMobileSidebar()">✕</button>
@@ -10,24 +12,6 @@
             <a class="nav-link" href="{% url 'dashboard_page' %}">
                 <span class="nav-link-icon">📊</span>
                 <span>Dashboard</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link active" href="{% url 'catalogue_page' %}">
-                <span class="nav-link-icon">📦</span>
-                <span>Catalogue</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'new_proposition_page' %}">
-                <span class="nav-link-icon">✏️</span>
-                <span>Nouvelle Proposition</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'propositions_page' %}">
-                <span class="nav-link-icon">📄</span>
-                <span>Propositions</span>
             </a>
         </li>
         <li class="nav-item">
@@ -49,13 +33,13 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'import_page' %}">
-                <span class="nav-link-icon">📥</span>
-                <span>Import Excel</span>
+            <a class="nav-link" href="{% url 'list_users_admin_page' %}">
+                <span class="nav-link-icon">👤</span>
+                <span>Utilisateurs</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{% static 'admin.html' %}">
+            <a class="nav-link" href="{% url 'admin_page' %}">
                 <span class="nav-link-icon">⚙️</span>
                 <span>Administration</span>
             </a>
@@ -64,8 +48,8 @@
     <div class="sidebar-footer">
         <div class="user-info user-menu-trigger" id="userMenuTrigger" tabindex="0" role="button" aria-haspopup="true"
             aria-expanded="false">
-            <div class="user-avatar">M</div>
-            <div class="user-name">Marc Dupont</div>
+            <div class="user-avatar">{{ admin.first_letter }}</div>
+            <div class="user-name">{{ admin.name }}</div>
         </div>
         <a class="btn-logout" id="sidebarLogoutBtn" href="{% url 'logout_user' %}">Déconnexion</a>
         <div class="logout-menu" id="sidebarLogoutMenu" hidden>

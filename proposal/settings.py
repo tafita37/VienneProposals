@@ -145,6 +145,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "authentification.User"
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'authentification.backends.AdminUserBackend',
+]
+
 USE_L10N = True
 USE_THOUSAND_SEPARATOR = True
 LANGUAGE_CODE = 'fr'

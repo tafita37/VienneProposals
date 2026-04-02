@@ -1,0 +1,111 @@
+{% extends 'baseAdmin.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Administration - Vienne Agencement{% endblock %}
+
+{% block header_title %}Administration {% endblock %}
+
+{% block header_subtitle %}Accès administrateur réservé{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/admin.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Administration Système</h2>
+    <div
+        style="background: rgba(13, 115, 119, 0.05); padding: 1.5rem; border-left: 4px solid var(--accent); border-radius: 8px; margin-bottom: 1.5rem;">
+        <p style="color: var(--text-dark); font-weight: 500;">Section réservée aux administrateurs</p>
+        <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 0.5rem;">Vous avez accès aux
+            paramètres système, gestion des utilisateurs et des autorisations.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">👥</div>
+            <h3 style="margin-bottom: 0.5rem;">Gestion des utilisateurs</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Ajouter, modifier ou supprimer des
+                utilisateurs et gérer leurs rôles.</p>
+            <a href="{% url 'list_users_admin_page' %}" class="btn btn-primary" style="width: 100%; margin-top: 1rem; display: inline-block; text-align: center;">Gérer</a>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔐</div>
+            <h3 style="margin-bottom: 0.5rem;">Paramètres de sécurité</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Configurer les politiques de sécurité et
+                les permissions d'accès.</p>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Configurer</button>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+            <h3 style="margin-bottom: 0.5rem;">Rapports et statistiques</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Consulter les rapports d'activité et les
+                statistiques du système.</p>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Consulter</button>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">⚙️</div>
+            <h3 style="margin-bottom: 0.5rem;">Configuration globale</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Définir les paramètres globaux de
+                l'application.</p>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Configurer</button>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🗄️</div>
+            <h3 style="margin-bottom: 0.5rem;">Gestion des données</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Sauvegarder, restaurer ou nettoyer les
+                données du système.</p>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Gérer</button>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: all 0.3s;"
+            onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(13, 115, 119, 0.2)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📝</div>
+            <h3 style="margin-bottom: 0.5rem;">Journaux d'activité</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Consulter les journaux de tous les
+                événements du système.</p>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Consulter</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Statistiques Système</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <div class="stat-box">
+            <div class="stat-number">128</div>
+            <div class="stat-label">Utilisateurs actifs</div>
+        </div>
+        <div class="stat-box success">
+            <div class="stat-number">2.456</div>
+            <div class="stat-label">Propositions créées</div>
+        </div>
+        <!-- <div class="stat-box warning">
+                            <div class="stat-number">98.5%</div>
+                            <div class="stat-label">Uptime du système</div>
+                        </div> -->
+    </div>
+</div>
+{% endblock %}

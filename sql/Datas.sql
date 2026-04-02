@@ -1,3 +1,8 @@
+INSERT INTO role (name) VALUES
+('Commercial'),
+('Gestionnaire de stock'),
+('Administrateur');
+
 INSERT INTO category (name) VALUES
 ('Portes intérieures'),
 ('Panneaux sandwich'),
