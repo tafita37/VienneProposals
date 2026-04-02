@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vienne Agencement{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    {% block css %}{% endblock %}
+    <link rel="icon" href="{% static 'img/logo_mini.png' %}" sizes="192x192">
+</head>
+
+<body>
+    <div class="app-layout">
+        {% include 'includes/_sidebar_user.html' %}
+        <div class="main-content">
+            <header class="header">
+                <div style="display: flex; align-items: center; width: 100%;">
+                    <button class="sidebar-toggle-header" onclick="toggleSidebar()">☰</button>
+                    <h1 class="header-title" style="margin-left : 5px;">{% block header_title %}{% endblock %}</h1>
+                </div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">{% block header_subtitle %}{% endblock %}</div>
+            </header>
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/common.js' %}"></script>
+    {% block js %}{% endblock %}
+</body>
+
+</html>

@@ -1,7 +1,7 @@
 from django.views.decorators.http import require_GET, require_POST
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
+from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
 from commercial.metier.CompanyType import CompanyType
 from commercial.metier.Individual import Individual
@@ -11,7 +11,7 @@ from commercial.metier.Product import Product
 from commercial.metier.Unit import Unit
 
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def liste_client_page(request):
     all_clients = Client.objects.all()
     return render(
@@ -21,7 +21,7 @@ def liste_client_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def liste_categorie_page(request):
     all_categories = Category.objects.all()
     return render(
@@ -31,7 +31,7 @@ def liste_categorie_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def liste_product_page(request):
     all_products = Product.objects.all()
     all_categories = Category.objects.all()
@@ -43,7 +43,7 @@ def liste_product_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def new_client_page(request):
     allCompanyTypes = CompanyType.objects.all()
     return render(
@@ -53,7 +53,7 @@ def new_client_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def edit_client_page(request, client_id):
     client = Client.objects.get(id=client_id)
     if client.is_company :
@@ -74,7 +74,7 @@ def edit_client_page(request, client_id):
         )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def new_client_page(request):
     allCompanyTypes = CompanyType.objects.all()
     return render(
@@ -84,7 +84,7 @@ def new_client_page(request):
     )
     
 @require_POST
-@login_required(login_url='login_user_page')
+@admin_required
 def save_client(request):
     address = request.POST.get('address')
     email = request.POST.get('email')
@@ -134,7 +134,7 @@ def save_client(request):
     return redirect('liste_client_page')
 
 @require_POST
-@login_required(login_url='login_user_page')
+@admin_required
 def saveCategorie(request):
     id= request.POST.get('id')
     name = request.POST.get('name')
@@ -147,7 +147,7 @@ def saveCategorie(request):
     return redirect('liste_categorie_page')
 
 @require_POST
-@login_required(login_url='login_user_page')
+@admin_required
 def saveProduct(request):
     id= request.POST.get('id')
     if id:
@@ -171,7 +171,7 @@ def saveProduct(request):
     return redirect('liste_product_page')
 
 @require_POST
-@login_required(login_url='login_user_page')
+@admin_required
 def update_client(request):
     client_id = request.POST.get('client_id')
     if not client_id:
@@ -229,7 +229,7 @@ def update_client(request):
     return redirect('liste_client_page')
 
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def delete_client(request):
     client_id= request.GET.get('client_id')
     client = Client.objects.filter(id=client_id).first()
@@ -238,7 +238,7 @@ def delete_client(request):
     return redirect('liste_client_page')
 
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def delete_category(request):
     category_id= request.GET.get('id')
     category = Category.objects.filter(id=category_id).first()
@@ -247,7 +247,7 @@ def delete_category(request):
     return redirect('liste_categorie_page')
 
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def delete_product(request):
     product_id= request.GET.get('id')
     product = Product.objects.filter(id=product_id).first()

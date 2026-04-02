@@ -1,0 +1,97 @@
+{% extends 'baseAdmin.html' %}
+
+{% load static %}
+
+{% block title %}Utilisateurs - Vienne Agencement{% endblock %}
+
+{% block header_title %}Utilisateurs{% endblock %}
+
+{% block header_subtitle %}Gérez les comptes utilisateurs de l'application.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/admin_users.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/admin_users.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <h2>Liste des utilisateurs</h2>
+        <a href="{% url 'new_user_admin_page' %}" class="btn btn-primary" style="max-width: 240px;">+ Ajouter un utilisateur</a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    {% for message in messages %}
+    {% if message.tags == 'error' %}
+    <p style="margin: 0.25rem 0; color: #b42318;">{{ message }}</p>
+    {% else %}
+    <p style="margin: 0.25rem 0; color: #087443;">{{ message }}</p>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Username</th>
+                    <th style="padding: 0.75rem; text-align: left;">Nom complet</th>
+                    <th style="padding: 0.75rem; text-align: left;">Email</th>
+                    <th style="padding: 0.75rem; text-align: left;">Roles</th>
+                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_item in users %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.75rem;">{{ user_item.username }}</td>
+                    <td style="padding: 0.75rem;">{{ user_item.first_name }} {{ user_item.last_name }}</td>
+                    <td style="padding: 0.75rem;">{{ user_item.email }}</td>
+                    <td style="padding: 0.75rem;">
+                        {% for user_role in user_item.userrole_set.all %}
+                            <span style="display: inline-block; background: #f1f4f8; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; margin: 0 0.25rem 0.25rem 0;">{{ user_role.role.name }}</span>
+                        {% empty %}
+                            <span style="color: var(--text-light);">-</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 0.75rem; white-space: nowrap;">
+                        <div style="display: inline-flex; gap: 0.5rem;">
+                            <a href="{% url 'edit_user_admin_page' user_item.id %}" class="btn btn-secondary">Modifier</a>
+                            <a
+                                href="{% url 'delete_user_admin' %}?id={{ user_item.id }}"
+                                class="btn btn-secondary js-delete-user"
+                                style="background: var(--warning);"
+                                data-user-name="{{ user_item.username }}"
+                            >Supprimer</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: 1rem; color: var(--text-light);">Aucun utilisateur trouvé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true" style="display: none;">
+    <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+    <div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+        <h3 id="deleteConfirmTitle">Confirmer la désactivation</h3>
+        <p id="deleteConfirmText">Voulez-vous vraiment désactiver cet utilisateur ?</p>
+        <div class="delete-confirm-actions">
+            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Désactiver</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -5,7 +5,6 @@ from commercial.controllers.ImportController import import_page, read_excel_file
 from commercial.controllers.StatController import dashboard_page
 
 urlpatterns = [
-    path('dashboard_page/', dashboard_page, name='dashboard_page'),
     path('catalog_page/', catalogue_page, name='catalogue_page'),
     path('api/products/', get_products_api, name='get_products_api'),
     path('api/clients/<int:client_id>/', get_client_by_id_api, name='get_client_by_id_api'),
@@ -19,7 +18,6 @@ urlpatterns = [
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
     path('import_page/', import_page, name='import_page'),
     path('import/read_excel_file/', read_excel_file, name='read_excel_file'),
-    path('client/', include('commercial.url_crud.client_url')),
     path('category/', include('commercial.url_crud.categorie_url')),
     path('product/', include('commercial.url_crud.product_url')),
 ]
