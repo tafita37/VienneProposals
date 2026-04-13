@@ -1,5 +1,7 @@
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
+from django.db import transaction
+from decimal import Decimal, InvalidOperation
 
 from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
@@ -155,7 +157,7 @@ def saveProduct(request):
         product.designation = request.POST.get('designation')
         product.purchase_unit_price = request.POST.get('purchase_unit_price')
         product.sale_unit_price = request.POST.get('sale_unit_price')
-        product.coefficent = request.POST.get('coefficient')
+        product.coefficient = request.POST.get('coefficient')
         product.unit_id = request.POST.get('unit_id')
     else:
         category_id = request.POST.get('category_id')
@@ -168,6 +170,28 @@ def saveProduct(request):
             category_id=category_id
         )
     product.save()
+    return redirect('liste_product_page')
+
+
+@require_POST
+@admin_required
+def update_global_product_coefficient(request):
+    raw_coefficient = request.POST.get('coefficient', '').strip()
+
+    try:
+        coefficient = Decimal(raw_coefficient)
+    except (InvalidOperation, TypeError, ValueError):
+        return redirect('liste_product_page')
+
+    if coefficient < 0:
+        return redirect('liste_product_page')
+
+    with transaction.atomic():
+        for product in Product.objects.all():
+            product.coefficient = coefficient
+            product.sale_unit_price = float(product.purchase_unit_price) * float(coefficient)
+            product.save(update_fields=['coefficient', 'sale_unit_price'])
+
     return redirect('liste_product_page')
 
 @require_POST
