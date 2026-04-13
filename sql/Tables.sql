@@ -103,15 +103,18 @@ CREATE TABLE commercial_proposal(
    amount_ht DOUBLE PRECISION NOT NULL,
    amount_ttc DOUBLE PRECISION NOT NULL,
    client_id INTEGER NOT NULL,
+   commercial_id INTEGER NOT NULL,
    PRIMARY KEY(id),
-   FOREIGN KEY(client_id) REFERENCES client(id)
+   FOREIGN KEY(client_id) REFERENCES client(id),
+   FOREIGN KEY(commercial_id) REFERENCES users(id)
 );
 
 CREATE TABLE proposal_product(
    id SERIAL,
    coefficient DOUBLE PRECISION NOT NULL,
    quantity DOUBLE PRECISION NOT NULL,
-   unit_price DOUBLE PRECISION NOT NULL,
+   purchase_unit_price DOUBLE PRECISION NOT NULL,
+   sale_unit_price DOUBLE PRECISION NOT NULL,
    product_id INTEGER NOT NULL,
    commercial_proposal_id INTEGER NOT NULL,
    PRIMARY KEY(id),

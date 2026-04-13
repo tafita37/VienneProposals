@@ -2,11 +2,14 @@ from django.urls import include, path
 
 from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, get_client_by_id_api, get_products_api, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_proposal_options_api, save_selected_products_api, validate_proposition_page
 from commercial.controllers.ImportController import import_page, read_excel_file
-from commercial.controllers.StatController import dashboard_page
+from commercial.controllers.StatController import get_initial_dashboard_data, get_profit_by_month, get_stat_by_commercial
 
 urlpatterns = [
     path('catalog_page/', catalogue_page, name='catalogue_page'),
     path('api/products/', get_products_api, name='get_products_api'),
+    path('api/loadInitialDataDashboard/', get_initial_dashboard_data, name='load_initial_dashboard_data_api'),
+    path('api/statByCommercial/', get_stat_by_commercial, name='stat_by_commercial_api'),
+    path('api/profitByMonth/', get_profit_by_month, name='profit_by_month_api'),
     path('api/clients/<int:client_id>/', get_client_by_id_api, name='get_client_by_id_api'),
     path('api/proposals/selected-products/', save_selected_products_api, name='save_selected_products_api'),
     path('api/proposals/remove-product/', remove_selected_product_api, name='remove_selected_product_api'),

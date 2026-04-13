@@ -154,7 +154,7 @@ def update_user_admin(request):
     password = request.POST.get('password') or ''
     role_ids = request.POST.getlist('role_ids')
 
-    if not username or not first_name or not last_name or not email:
+    if not username or not first_name or not email:
         messages.error(request, "Tous les champs obligatoires doivent etre remplis")
         return redirect('edit_user_admin_page', user_id=user.id)
 
