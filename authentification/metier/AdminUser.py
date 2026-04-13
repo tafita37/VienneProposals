@@ -7,6 +7,7 @@ class AdminUser(AbstractBaseUser):
     first_name = models.CharField(max_length=100, db_column='first_name')
     last_name = models.CharField(max_length=100, db_column='last_name')
     REQUIRED_FIELDS = []
+    USERNAME_FIELD = 'username'
 
     class Meta:
         db_table = 'admin_users'

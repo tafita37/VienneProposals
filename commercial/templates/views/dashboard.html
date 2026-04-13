@@ -13,6 +13,7 @@
 {% endblock %}
 
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/pages/dashboard.js' %}"></script>
 {% endblock %}
 
@@ -23,7 +24,7 @@
         Cet outil vous permet de gérer vos propositions commerciales de manière efficace et
         professionnelle.
     </p>
-    <div
+    <!-- <div
         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
         <div class="stat-box">
             <div class="stat-number">42</div>
@@ -36,6 +37,43 @@
         <div class="stat-box warning">
             <div class="stat-number">14</div>
             <div class="stat-label">En attente</div>
+        </div>
+    </div> -->
+</div>
+
+<div class="card">
+    <div class="dashboard-section-header">
+        <h2>Propositions créées par commercial</h2>
+        <div class="dashboard-filter-wrap">
+            <label for="dashboardYearInput">Année :</label>
+            <input id="dashboardYearInput" class="dashboard-year-input" type="number" min="2024" max="2026"
+                step="1" aria-label="Saisir une année">
+        </div>
+    </div>
+    <span class="dashboard-section-meta" id="commercialMeta"></span>
+    <div class="commercial-stats-grid" id="commercialStatsGrid"></div>
+</div>
+
+<div class="card">
+    <div class="dashboard-section-header">
+        <h2>Bénéfices mensuels</h2>
+        <div class="dashboard-filter-wrap">
+            <label for="profitYearInput">Année :</label>
+            <input id="profitYearInput" class="dashboard-year-input" type="number" min="2024" max="2026" step="1" aria-label="Saisir une année pour les bénéfices">
+        </div>
+    </div>
+    <span class="dashboard-section-meta" id="profitMeta"></span>
+    <div class="profit-chart" id="profitChart" aria-label="Bénéfices par mois sur 2026">
+        <canvas id="profitChartCanvas" height="240" aria-label="Graphique des bénéfices mensuels" role="img"></canvas>
+    </div>
+    <div class="profit-summary">
+        <div>
+            <span class="summary-label">Bénéfice cumulé annuel</span>
+            <strong class="summary-value" id="yearlyProfit">0 Ar</strong>
+        </div>
+        <div>
+            <span class="summary-label">Mois le plus performant</span>
+            <strong class="summary-value" id="bestMonth">-</strong>
         </div>
     </div>
 </div>

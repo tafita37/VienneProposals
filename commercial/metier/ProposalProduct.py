@@ -8,7 +8,8 @@ class ProposalProduct(models.Model):
     id = models.AutoField(primary_key=True)
     coefficient = models.FloatField()  # DOUBLE PRECISION en SQL
     quantity = models.FloatField()  # DOUBLE PRECISION en SQL
-    unit_price = models.FloatField()  # DOUBLE PRECISION en SQL
+    purchase_unit_price = models.FloatField()  # DOUBLE PRECISION en SQL
+    sale_unit_price = models.FloatField()  # DOUBLE PRECISION en SQL
     commercial_proposal = models.ForeignKey(
         CommercialProposal,
         on_delete=models.PROTECT,

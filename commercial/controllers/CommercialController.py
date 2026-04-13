@@ -39,7 +39,11 @@ def _compute_proposal_total(list_proposal):
             try:
                 quantity = float(item.get('quantity', 0))
                 coefficient = float(item.get('coefficient', 0))
-                sale_unit_price = float(product.get('prix_unitaire_vente', 0)) if isinstance(product, dict) else 0.0
+                sale_unit_price = 0.0
+                if isinstance(product, dict):
+                    sale_unit_price = float(
+                        product.get('sale_unit_price', product.get('prix_unitaire_vente', 0))
+                    )
                 product_total = sale_unit_price * coefficient * quantity
             except (TypeError, ValueError):
                 product_total = 0.0
@@ -212,12 +216,14 @@ def save_selected_products_api(request):
                 product_id = int(product_value.get('id', product_value.get('product_id', 0)))
                 designation = str(product_value.get('designation', '')).strip()
                 category_name = str(product_value.get('category_name', '')).strip()
-                prix_unitaire_vente = float(product_value.get('prix_unitaire_vente', 0))
+                prix_unitaire_vente = float(product_value.get('sale_unit_price', product_value.get('prix_unitaire_vente', 0)))
+                prix_unitaire_achat = float(product_value.get('purchase_unit_price', product_value.get('prix_unitaire_achat', 0)))
             else:
                 product_id = int(product_value)
                 designation = ''
                 category_name = ''
-                prix_unitaire_vente = float(raw_item.get('prix_unitaire_vente', 0))
+                prix_unitaire_vente = float(raw_item.get('sale_unit_price', raw_item.get('prix_unitaire_vente', 0)))
+                prix_unitaire_achat = float(raw_item.get('purchase_unit_price', raw_item.get('prix_unitaire_achat', 0)))
 
             coefficient = float(raw_item.get('coefficient', 0))
             quantity = float(raw_item.get('quantity', 0))
@@ -227,13 +233,28 @@ def save_selected_products_api(request):
         if product_id <= 0 or quantity <= 0:
             return
 
+        if prix_unitaire_achat <= 0 or not designation or not category_name:
+            product = Product.objects.filter(
+                id=product_id
+            ).only('id', 'designation', 'category', 'purchase_unit_price', 'sale_unit_price').first()
+            if product is not None:
+                designation = designation or str(product.designation)
+                category_name = category_name or str(product.category.name)
+                if prix_unitaire_vente <= 0:
+                    prix_unitaire_vente = float(product.sale_unit_price)
+                if prix_unitaire_achat <= 0:
+                    prix_unitaire_achat = float(product.purchase_unit_price)
+
         proposal_by_product[product_id] = {
             'product': {
                 'id': product_id,
                 'designation': designation,
                 'category_name': category_name,
                 'prix_unitaire_vente': prix_unitaire_vente,
+                'prix_unitaire_achat': prix_unitaire_achat,
                 'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
+                'sale_unit_price': prix_unitaire_vente,
+                'purchase_unit_price': prix_unitaire_achat,
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
@@ -263,17 +284,26 @@ def save_selected_products_api(request):
         if product_id <= 0 or quantity <= 0:
             continue
 
-        product = Product.objects.filter(id=product_id).only('id', 'designation', 'category', 'sale_unit_price').first()
+        product = Product.objects.filter(
+            id=product_id
+        ).only('id', 'designation', 'category', 'purchase_unit_price', 'sale_unit_price').first()
         if not product:
             continue
+
+        sale_unit_price = max(0.0, float(product.sale_unit_price))
+        purchase_unit_price = max(0.0, float(product.purchase_unit_price))
+        product_total = sale_unit_price * max(0.0, coefficient) * max(0.0, quantity)
 
         proposal_by_product[product_id] = {
             'product': {
                 'id': product.id,
                 'designation': product.designation,
                 'category_name': product.category.name,
-                'prix_unitaire_vente': float(product.sale_unit_price),
-                'total': float(product.sale_unit_price) * max(0.0, coefficient) * max(0.0, quantity),
+                'sale_unit_price': sale_unit_price,
+                'purchase_unit_price': purchase_unit_price,
+                'prix_unitaire_vente': sale_unit_price,
+                'prix_unitaire_achat': purchase_unit_price,
+                'total': product_total,
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
@@ -411,7 +441,7 @@ def new_proposition_page(request):
                 try:
                     category_name = str(product.get('category_name', '')).strip() or 'Non catégorisé'
                     designation = str(product.get('designation', '')).strip()
-                    sale_unit_price = float(product.get('prix_unitaire_vente', 0))
+                    sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
                     quantity = float(item.get('quantity', 0))
                     coefficient = float(item.get('coefficient', 0))
                     product_total = float(product.get('total', 0))
@@ -422,7 +452,9 @@ def new_proposition_page(request):
                 try:
                     quantity = float(item.get('quantity', 0))
                     coefficient = float(item.get('coefficient', 0))
-                    sale_unit_price = float(product.get('prix_unitaire_vente', 0)) if isinstance(product, dict) else 0.0
+                    sale_unit_price = 0.0
+                    if isinstance(product, dict):
+                        sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
                     product_total = sale_unit_price * coefficient * quantity
                 except (TypeError, ValueError):
                     product_total = 0.0
@@ -518,7 +550,7 @@ def appercu_proposition_page(request):
                     designation = str(product.get('designation', '')).strip()
                     quantity = float(item.get('quantity', 0))
                     coefficient = float(item.get('coefficient', 0))
-                    sale_unit_price = float(product.get('prix_unitaire_vente', 0))
+                    sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
                     product_total = float(product.get('total', 0))
                 except (TypeError, ValueError):
                     product_total = 0.0
@@ -621,24 +653,31 @@ def validate_proposition_page(request):
         if quantity <= 0:
             continue
 
-        unit_price = 0.0
+        sale_unit_price = 0.0
+        purchase_unit_price = 0.0
         if isinstance(product, dict):
             try:
-                unit_price = float(product.get('prix_unitaire_vente', 0))
+                sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
+                purchase_unit_price = float(product.get('purchase_unit_price', product.get('prix_unitaire_achat', 0)))
             except (TypeError, ValueError):
-                unit_price = 0.0
+                sale_unit_price = 0.0
+                purchase_unit_price = 0.0
 
-        if unit_price <= 0 and coefficient > 0:
+        if sale_unit_price <= 0 and coefficient > 0:
             try:
                 computed_total = float(product.get('total', 0)) if isinstance(product, dict) else 0.0
-                unit_price = computed_total / (coefficient * quantity)
+                sale_unit_price = computed_total / (coefficient * quantity)
             except (TypeError, ValueError, ZeroDivisionError):
-                unit_price = 0.0
+                sale_unit_price = 0.0
+
+        if purchase_unit_price < 0:
+            purchase_unit_price = 0.0
 
         proposal_rows.append({
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
-            'unit_price': max(0.0, unit_price),
+            'sale_unit_price': max(0.0, sale_unit_price),
+            'purchase_unit_price': max(0.0, purchase_unit_price),
             'product_id': product_id if product_id > 0 else None,
         })
 
@@ -651,6 +690,7 @@ def validate_proposition_page(request):
             amount_ht=amount_ht,
             amount_ttc=amount_ttc,
             client=selected_client,
+            commercial=request.user,
         )
 
         proposal_product_objects = []
@@ -666,7 +706,8 @@ def validate_proposition_page(request):
                 ProposalProduct(
                     coefficient=row['coefficient'],
                     quantity=row['quantity'],
-                    unit_price=row['unit_price'],
+                    sale_unit_price=row['sale_unit_price'],
+                    purchase_unit_price=row['purchase_unit_price'],
                     commercial_proposal=commercial_proposal,
                     product=product_obj,
                 )
@@ -714,7 +755,7 @@ def proposition_detail(request):
     for proposal_product in commercialProposal.proposal_products.all():
         quantity = max(0.0, float(proposal_product.quantity))
         coefficient = max(0.0, float(proposal_product.coefficient))
-        sale_unit_price = max(0.0, float(proposal_product.unit_price))
+        sale_unit_price = max(0.0, float(proposal_product.sale_unit_price))
         product_total = quantity * coefficient * sale_unit_price
 
         category_name = 'Non catégorisé'
