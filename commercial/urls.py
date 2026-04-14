@@ -1,7 +1,6 @@
 from django.urls import include, path
 
 from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, get_client_by_id_api, get_products_api, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_proposal_options_api, save_selected_products_api, validate_proposition_page
-from commercial.controllers.ImportController import import_page, read_excel_file
 from commercial.controllers.StatController import get_initial_dashboard_data, get_profit_by_month, get_stat_by_commercial
 
 urlpatterns = [
@@ -19,8 +18,6 @@ urlpatterns = [
     path('validate_proposition_page/', validate_proposition_page, name='validate_proposition_page'),
     path('propositions_page/', propositions_page, name='propositions_page'),
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
-    path('import_page/', import_page, name='import_page'),
-    path('import/read_excel_file/', read_excel_file, name='read_excel_file'),
     path('category/', include('commercial.url_crud.categorie_url')),
     path('product/', include('commercial.url_crud.product_url')),
 ]

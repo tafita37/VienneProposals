@@ -17,6 +17,7 @@ Including another URLconf
 from django.urls import include, path
 
 from authentification.controllers.UserController import login_admin, login_admin_page
+from commercial.controllers.ImportController import import_page, read_excel_file
 from commercial.controllers.StatController import admin_page, dashboard_page
 
 urlpatterns = [
@@ -26,4 +27,6 @@ urlpatterns = [
     path('administration_page/', admin_page, name='admin_page'),
     path('client/', include('commercial.url_crud.client_url')),
     path('user/', include('authentification.url_crud.user_url')),
+    path('import_page/', import_page, name='import_page'),
+    path('import/read_excel_file/', read_excel_file, name='read_excel_file'),
 ]

@@ -1,15 +1,15 @@
 from django.db import connection
 from django.views.decorators.http import require_GET, require_POST
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from openpyxl import load_workbook
 import io
+from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
 from unidecode import unidecode
 
 @require_GET
-@login_required(login_url='login_user_page')
+@admin_required
 def import_page(request):
     return render(
         request, 
@@ -17,7 +17,7 @@ def import_page(request):
     )
 
 @require_POST
-@login_required(login_url='login_user_page')
+@admin_required
 def read_excel_file(request):
     excel_file = request.FILES.get('excel_file')
     
