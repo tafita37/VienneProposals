@@ -108,8 +108,8 @@
                 <td>${product.designation}</td>
                 <td>${product.category_name}</td>
                 <td>${product.unit_name}</td>
-                <td>${product.sale_unit_price} €</td>
-                <td><input type="number" class="input-coefficient" value="${product.coefficient}" min="0.1" step="0.1"></td>
+                <td>${euroFormatter.format(product.sale_unit_price)} €</td>
+                <td><input type="number" class="input-coefficient" value="1" min="0.1" step="0.1"></td>
                 <td><input type="number" class="input-quantity" value="${product.quantity || 0}" min="0"></td>
                 <td class="total-cell">0 €</td>
             `;
@@ -183,6 +183,4 @@
                 window.alert('Erreur lors de la création de la proposition.');
             });
     });
-
-    fetchProducts();
 });

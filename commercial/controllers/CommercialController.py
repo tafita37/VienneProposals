@@ -4,11 +4,11 @@ from datetime import date
 
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
-from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import transaction
 
+from authentification.decoratos import user_required
 from commercial.metier.Category import Category
 from commercial.metier.Client import Client
 from commercial.metier.CommercialProposal import CommercialProposal
@@ -53,7 +53,7 @@ def _compute_proposal_total(list_proposal):
     return total
 
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def catalogue_page(request):
     list_proposal = request.session.get('proposal', [])
     nom = request.GET.get('nom', '').strip()
@@ -115,7 +115,7 @@ def catalogue_page(request):
 
 
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def get_products_api(request):
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
@@ -172,7 +172,7 @@ def get_products_api(request):
 
 
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def get_client_by_id_api(request, client_id):
     client = Client.objects.filter(id=client_id).first()
 
@@ -193,7 +193,7 @@ def get_client_by_id_api(request, client_id):
 
 
 @require_POST
-@login_required(login_url='login_user_page')
+@user_required
 def save_selected_products_api(request):
     try:
         payload = json.loads(request.body or '{}')
@@ -320,7 +320,7 @@ def save_selected_products_api(request):
 
 
 @require_POST
-@login_required(login_url='login_user_page')
+@user_required
 def remove_selected_product_api(request):
     try:
         payload = json.loads(request.body or '{}')
@@ -368,7 +368,7 @@ def remove_selected_product_api(request):
 
 
 @require_POST
-@login_required(login_url='login_user_page')
+@user_required
 def save_proposal_options_api(request):
     try:
         payload = json.loads(request.body or '{}')
@@ -411,7 +411,7 @@ def save_proposal_options_api(request):
     })
     
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 @ensure_csrf_cookie
 def new_proposition_page(request):
     list_proposal= request.session.get('proposal', [])
@@ -517,7 +517,7 @@ def new_proposition_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def appercu_proposition_page(request):
     proposal_id = request.GET.get('proposal_id', '').strip()
     client_id = request.GET.get('client_id', '').strip()
@@ -604,7 +604,7 @@ def appercu_proposition_page(request):
 
 
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def validate_proposition_page(request):
     session_proposal = request.session.get('proposal', [])
     session_client_id = request.session.get('proposal_client_id')
@@ -723,7 +723,7 @@ def validate_proposition_page(request):
     return redirect('new_proposition_page')
 
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def propositions_page(request):
     client_id= request.GET.get('client_id', '').strip()
     if client_id:
@@ -742,7 +742,7 @@ def propositions_page(request):
     )
     
 @require_GET
-@login_required(login_url='login_user_page')
+@user_required
 def proposition_detail(request):
     proposal_id = request.GET.get('proposal_id', '').strip()
 

@@ -223,4 +223,4 @@ def read_excel_file(request):
         messages.error(request, f"Erreur de lecture: {str(e)}")
         return redirect('import_page')
     
-    return redirect('catalogue_page')
+    return redirect('liste_product_page')

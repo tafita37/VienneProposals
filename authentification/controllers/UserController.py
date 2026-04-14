@@ -11,7 +11,7 @@ from authentification.models import Role, User, UserRole
 
 @require_GET
 def login_user_page(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and isinstance(request.user, User):
         return redirect('catalogue_page')  # Redirige si déjà connecté
     return render(request, "views/login_user.html")
 

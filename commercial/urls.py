@@ -18,6 +18,4 @@ urlpatterns = [
     path('validate_proposition_page/', validate_proposition_page, name='validate_proposition_page'),
     path('propositions_page/', propositions_page, name='propositions_page'),
     path('proposition_detail/', proposition_detail, name='proposition_detail_page'),
-    path('category/', include('commercial.url_crud.categorie_url')),
-    path('product/', include('commercial.url_crud.product_url')),
 ]
