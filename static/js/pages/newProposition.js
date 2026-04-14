@@ -167,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${designation}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${unitPrice.toFixed(2)} €</td>
-                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${coefficient.toFixed(2)}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">${total.toFixed(2)} €</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                     <button type="button" data-action="remove-product" data-product-id="${productId}" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem;">🗑️</button>

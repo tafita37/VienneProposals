@@ -120,7 +120,6 @@
                     <th style="padding: 0.75rem; text-align: left;">Produit</th>
                     <th style="padding: 0.75rem; text-align: left;">Qté</th>
                     <th style="padding: 0.75rem; text-align: left;">Prix unitaire</th>
-                    <th style="padding: 0.75rem; text-align: left;">Coeff</th>
                     <th style="padding: 0.75rem; text-align: left;">Total</th>
                     <th style="padding: 0.75rem; text-align: left;"></th>
                 </tr>
@@ -133,7 +132,6 @@
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.designation }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.quantity }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.coefficient|floatformat:2 }}</td>
                     <td
                         style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">
                         {{ proposal.product.total|floatformat:2 }} €</td>
