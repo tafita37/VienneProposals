@@ -122,7 +122,7 @@ function fillProductFields(productId) {
     
     if (selectedOption && selectedOption.dataset.unitPrice) {
         if (unitPriceInput) unitPriceInput.value = parseFloat(selectedOption.dataset.unitPrice).toFixed(2);
-        if (coefficientInput) coefficientInput.value = parseFloat(selectedOption.dataset.coefficient || 1).toFixed(1);
+        if (coefficientInput) coefficientInput.value = parseFloat(1).toFixed(1);
     } else {
         clearProductFields();
     }
@@ -136,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const addProductBtn = document.getElementById('addProductBtn');
     const addedProductsBody = document.getElementById('addedProductsBody');
     const addedProductsTotal = document.getElementById('addedProductsTotal');
+    const summaryContainer = document.getElementById('summaryContainer');
+    const proposalSummaryTable = document.getElementById('proposalSummaryTable');
     const previewLinks = document.querySelectorAll('.js-preview-proposal-link');
 
     const getCsrfToken = () => {
@@ -155,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryName = product.category_name || '';
         const designation = product.designation || '';
         const quantity = Number(item?.quantity || 0);
-        const unitPrice = Number(product.prix_unitaire || 0);
+        const unitPrice = Number(product.sale_unit_price ?? product.prix_unitaire_vente ?? product.prix_unitaire ?? 0);
         const coefficient = Number(item?.coefficient || 0);
         const total = Number(product.total || (unitPrice * coefficient * quantity));
 
@@ -237,6 +239,157 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         totalAmount.textContent = addedProductsTotal ? addedProductsTotal.textContent : '0.00 €';
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const safeNumber = (value) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const normalizeProposalItem = (item) => {
+        const product = item?.product || {};
+        const categoryName = String(product.category_name || '').trim() || 'Non catégorisé';
+        const designation = String(product.designation || '').trim();
+        const quantity = Math.max(0, safeNumber(item?.quantity));
+        const coefficient = Math.max(0, safeNumber(item?.coefficient));
+        const saleUnitPrice = Math.max(
+            0,
+            safeNumber(product.sale_unit_price ?? product.prix_unitaire_vente ?? product.prix_unitaire)
+        );
+        const totalFromApi = safeNumber(product.total);
+        const total = Math.max(0, totalFromApi || (saleUnitPrice * coefficient * quantity));
+
+        return {
+            categoryName,
+            designation,
+            quantity,
+            coefficient,
+            saleUnitPrice,
+            total,
+        };
+    };
+
+    const buildSummaryCategoriesFromProposal = (proposal) => {
+        if (!Array.isArray(proposal)) {
+            return [];
+        }
+
+        const summaryMap = new Map();
+
+        proposal.forEach((item) => {
+            const normalized = normalizeProposalItem(item);
+
+            if (!summaryMap.has(normalized.categoryName)) {
+                summaryMap.set(normalized.categoryName, {
+                    name: normalized.categoryName,
+                    total: 0,
+                    items: [],
+                });
+            }
+
+            const category = summaryMap.get(normalized.categoryName);
+            category.items.push(normalized);
+            category.total += normalized.total;
+        });
+
+        return Array.from(summaryMap.values());
+    };
+
+    const renderSummaryByCategory = (summaryCategories) => {
+        if (!summaryContainer) {
+            return;
+        }
+
+        const heading = '<h2 style="margin-bottom: 1.5rem; color: var(--text-dark);">Récapitulatif par Catégorie</h2>';
+
+        if (!summaryCategories.length) {
+            summaryContainer.innerHTML = `${heading}
+                <p style="color: var(--text-light); text-align: center; padding: 2rem;">
+                    Veuillez aller au
+                    <a href="/com/catalog_page/" style="color: var(--accent); text-decoration: underline;">catalogue</a>
+                    pour sélectionner des produits...
+                </p>`;
+            return;
+        }
+
+        const bodyHtml = summaryCategories.map((category) => {
+            const itemsHtml = category.items.map((item) => `
+                <div class="summary-item">
+                    <div class="summary-item-name">${escapeHtml(item.designation)}</div>
+                    <div class="summary-item-qty">${item.quantity.toFixed(2)}</div>
+                    <div class="summary-item-total">${item.total.toFixed(2)} €</div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="summary-section">
+                    <div class="summary-category-title">
+                        <span>${escapeHtml(category.name)}</span>
+                        <span>${category.total.toFixed(2)} €</span>
+                    </div>
+                    ${itemsHtml}
+                </div>
+            `;
+        }).join('');
+
+        summaryContainer.innerHTML = `${heading}${bodyHtml}`;
+    };
+
+    const renderProposalSummaryTable = (summaryCategories) => {
+        if (!proposalSummaryTable) {
+            return;
+        }
+
+        if (!summaryCategories.length) {
+            proposalSummaryTable.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-light);">
+                        Aucun produit sélectionné
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const rowsHtml = summaryCategories.map((category) => {
+            const categoryRow = `
+                <tr style="background: #f9f7f4; font-weight: 600;">
+                    <td>${escapeHtml(category.name)}</td>
+                    <td colspan="5"></td>
+                </tr>
+            `;
+
+            const itemRows = category.items.map((item) => `
+                <tr>
+                    <td></td>
+                    <td>${escapeHtml(item.designation)}</td>
+                    <td>${item.quantity.toFixed(2)}</td>
+                    <td>${item.saleUnitPrice.toFixed(2)} €</td>
+                    <td>${item.coefficient.toFixed(2)}</td>
+                    <td class="price-calculated">${item.total.toFixed(2)} €</td>
+                </tr>
+            `).join('');
+
+            return `${categoryRow}${itemRows}`;
+        }).join('');
+
+        proposalSummaryTable.innerHTML = rowsHtml;
+    };
+
+    const refreshDerivedProposalViews = (proposal) => {
+        const summaryCategories = buildSummaryCategoriesFromProposal(proposal);
+        renderSummaryByCategory(summaryCategories);
+        renderProposalSummaryTable(summaryCategories);
+
+        const total = summaryCategories.reduce((acc, category) => acc + safeNumber(category.total), 0);
+        refreshGlobalTotal(total);
     };
 
     const saveProposalOptions = async () => {
@@ -340,6 +493,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data?.message || 'Erreur lors de l\'enregistrement.');
                 }
 
+                if (Array.isArray(data?.proposal)) {
+                    refreshDerivedProposalViews(data.proposal);
+                }
+
                 const updatedProposalItem = Array.isArray(data?.proposal)
                     ? data.proposal.find((item) => Number(item?.product?.id) === Number(productId))
                     : null;
@@ -411,7 +568,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 refreshAddedProductsTotal();
-                refreshGlobalTotal(Number(data?.proposal_total));
+                if (Array.isArray(data?.proposal)) {
+                    refreshDerivedProposalViews(data.proposal);
+                } else {
+                    refreshGlobalTotal(Number(data?.proposal_total));
+                }
             } catch (error) {
                 console.error('Erreur lors de la suppression du produit :', error);
                 alert('Erreur lors de la suppression du produit.');
@@ -443,5 +604,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     refreshAddedProductsTotal();
-    refreshGlobalTotal(parseAmountFromText(addedProductsTotal?.textContent || '0'));
+    try {
+        const initialDataElement = document.getElementById('initial-proposal-data');
+        const initialProposal = initialDataElement ? JSON.parse(initialDataElement.textContent || '[]') : [];
+        refreshDerivedProposalViews(initialProposal);
+    } catch (error) {
+        refreshGlobalTotal(parseAmountFromText(addedProductsTotal?.textContent || '0'));
+    }
 });
