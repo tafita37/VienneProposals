@@ -1,6 +1,7 @@
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
 from django.db import transaction
+from django.http import JsonResponse
 from decimal import Decimal, InvalidOperation
 
 from authentification.decoratos import admin_required
@@ -43,6 +44,37 @@ def liste_product_page(request):
         "views/products.html",
         {"products": all_products, "categories": all_categories, "units": all_units}
     )
+
+
+@require_GET
+@admin_required
+def get_products_api(request):
+    nom = request.GET.get('nom', '').strip()
+    category_id = request.GET.get('category_id', '').strip()
+
+    products = Product.objects.select_related('category', 'unit').all()
+
+    if nom:
+        products = products.filter(designation__icontains=nom)
+
+    if category_id:
+        products = products.filter(category_id=category_id)
+
+    data = [
+        {
+            'id': product.id,
+            'designation': product.designation,
+            'category_id': product.category_id,
+            'category_name': product.category.name,
+            'unit_id': product.unit_id,
+            'unit_name': product.unit.name,
+            'purchase_unit_price': float(product.purchase_unit_price),
+            'sale_unit_price': float(product.sale_unit_price),
+        }
+        for product in products
+    ]
+
+    return JsonResponse({'products': data})
     
 @require_GET
 @admin_required

@@ -54,6 +54,22 @@
 
 <div class="card">
     <div id="productsMessage" class="form-message" aria-live="polite"></div>
+    <div class="filters">
+        <div class="filter-group">
+            <label for="categoryFilter">Catégorie</label>
+            <select id="categoryFilter" name="category_id">
+                <option value="">Toutes les catégories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="searchFilter">Rechercher</label>
+            <input type="text" placeholder="Nom du produit..." id="searchFilter" name="nom" autocomplete="off">
+        </div>
+    </div>
+
     <div style="overflow-x: auto;">
         <table id="productsTable" style="width: 100%; border-collapse: collapse;">
             <thead>
@@ -66,7 +82,7 @@
                     <th style="padding: 0.75rem; text-align: left;">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="productsTableBody">
                 {% for product in products %}
                 <tr>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
@@ -87,7 +103,15 @@
                         <button 
                             class="btn btn-secondary" 
                             style="margin-right: 0.5rem;"
-                            onclick="handleEditProduct('{{product.id}}', '{{product.designation}}', {'id': '{{product.category.id}}', 'name': '{{product.category.name}}'}, {'id': '{{product.unit.id}}', 'name': '{{product.unit.name}}'}, '{{product.purchase_unit_price}}', '{{product.sale_unit_price}}')"
+                            data-edit-product="true"
+                            data-product-id="{{ product.id }}"
+                            data-product-designation="{{ product.designation|escape }}"
+                            data-product-category-id="{{ product.category.id }}"
+                            data-product-category-name="{{ product.category.name|escape }}"
+                            data-product-unit-id="{{ product.unit.id }}"
+                            data-product-unit-name="{{ product.unit.name|escape }}"
+                            data-product-purchase-price="{{ product.purchase_unit_price }}"
+                            data-product-sale-price="{{ product.sale_unit_price }}"
                         >
                             ✏️
                         </button>
