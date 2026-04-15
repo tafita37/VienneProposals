@@ -4,8 +4,10 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from openpyxl import load_workbook
 import io
+import re
 from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
+from commercial.metier.Product import Product
 from unidecode import unidecode
 
 @require_GET
@@ -47,6 +49,7 @@ def read_excel_file(request):
         nb_vide = 0
         products_to_insert = []  # Liste pour stocker toutes les données
         row_errors = []
+        invalid_rows = set()
         
         for excel_row in range(7, sheet.max_row + 1):
             has_data = False
@@ -108,6 +111,7 @@ def read_excel_file(request):
                         raise ValueError("prix de vente invalide")
 
                     products_to_insert.append({
+                        'excel_row': excel_row,
                         'designation': designation,
                         'unite': unite,
                         'quantite': quantite,
@@ -118,18 +122,60 @@ def read_excel_file(request):
                     })
                 except Exception as row_error:
                     row_errors.append(f"Ligne Excel {excel_row}: {row_error}")
+                    invalid_rows.add(excel_row)
             else:
                 nb_vide += 1
             
             if nb_vide >= 2:
                 break
 
+        seen_designations = {}
+        for product in products_to_insert:
+            designation = product['designation']
+            excel_row = product['excel_row']
+
+            if designation in seen_designations:
+                first_row = seen_designations[designation]
+                row_errors.append(
+                    f"Ligne Excel {excel_row}: désignation dupliquée dans le fichier "
+                    f"(déjà présente à la ligne {first_row}) -> '{designation}'."
+                )
+                invalid_rows.add(excel_row)
+            else:
+                seen_designations[designation] = excel_row
+
+        candidate_products = [
+            product for product in products_to_insert
+            if product['excel_row'] not in invalid_rows
+        ]
+
+        if candidate_products:
+            candidate_designations = [product['designation'] for product in candidate_products]
+            existing_designations = set(
+                Product.objects.filter(designation__in=candidate_designations)
+                .values_list('designation', flat=True)
+            )
+
+            for product in candidate_products:
+                if product['designation'] in existing_designations:
+                    row_errors.append(
+                        f"Ligne Excel {product['excel_row']}: désignation déjà existante en base -> "
+                        f"'{product['designation']}'."
+                    )
+                    invalid_rows.add(product['excel_row'])
+
+        products_to_insert = [
+            product for product in candidate_products
+            if product['excel_row'] not in invalid_rows
+        ]
+
         if row_errors:
-            messages.error(request, "Import annulé: des erreurs ont été détectées dans le fichier Excel.")
-            for row_error in row_errors[:10]:
+            messages.error(
+                request,
+                f"Import annulé: {len(row_errors)} erreur(s) détectée(s). Corrigez-les puis réimportez."
+            )
+            for row_error in row_errors:
                 messages.error(request, row_error, extra_tags='excel-row-error')
-            if len(row_errors) > 10:
-                messages.error(request, f"... et {len(row_errors) - 10} autre(s) erreur(s).", extra_tags='excel-row-error')
             return redirect('import_page')
         
         # Insertion en masse dans PostgreSQL
@@ -220,7 +266,26 @@ def read_excel_file(request):
         
     except Exception as e:
         print(f"Erreur: {e}")
-        messages.error(request, f"Erreur de lecture: {str(e)}")
+        error_message = str(e)
+
+        if "product_designation_key" in error_message or "(designation)=" in error_message:
+            duplicate_match = re.search(r"\(designation\)=\((.*?)\)", error_message)
+            duplicate_designation = duplicate_match.group(1) if duplicate_match else None
+
+            if duplicate_designation:
+                messages.error(
+                    request,
+                    f"Erreur d'import: la désignation '{duplicate_designation}' existe déjà. "
+                    f"Supprimez-la du fichier ou modifiez-la avant de réimporter."
+                )
+            else:
+                messages.error(
+                    request,
+                    "Erreur d'import: une désignation existe déjà en base. "
+                    "Corrigez les doublons puis réessayez."
+                )
+        else:
+            messages.error(request, f"Erreur de lecture: {error_message}")
         return redirect('import_page')
     
     return redirect('liste_product_page')
