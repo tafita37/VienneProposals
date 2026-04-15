@@ -1,4 +1,4 @@
-from django.db import connection
+from django.db import connection, transaction
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -44,8 +44,6 @@ def read_excel_file(request):
         if not category_name:
             category_name = raw_category.strip()
 
-        category = Category.objects.get_or_create(name=category_name)[0]
-        
         nb_vide = 0
         products_to_insert = []  # Liste pour stocker toutes les données
         row_errors = []
@@ -118,7 +116,6 @@ def read_excel_file(request):
                         'prixAchat': prixAchat,
                         'coefficient': coefficient,
                         'prixVente': prixVente,
-                        'category_id': category.id
                     })
                 except Exception as row_error:
                     row_errors.append(f"Ligne Excel {excel_row}: {row_error}")
@@ -180,86 +177,89 @@ def read_excel_file(request):
         
         # Insertion en masse dans PostgreSQL
         if products_to_insert:
-            with connection.cursor() as cursor:
-                # Créer la table temporaire
-                cursor.execute("""
-                    CREATE TEMP TABLE temp_catalogue_import (
-                        designation VARCHAR(500),
-                        unite VARCHAR(50),
-                        quantite DECIMAL,
-                        prix_achat DECIMAL,
-                        coefficient DECIMAL,
-                        prix_vente DECIMAL,
-                        category_id INTEGER
-                    )
-                """)
-                
-                cursor.execute("""
-                    CREATE TEMP VIEW temp_import_with_units AS
-                    SELECT 
-                        tci.designation,
-                        tci.unite,
-                        tci.quantite,
-                        tci.prix_achat,
-                        tci.coefficient,
-                        tci.prix_vente,
-                        tci.category_id,
-                        u.id as unite_id
-                    FROM temp_catalogue_import tci
-                    JOIN unit u ON u.name = tci.unite
-                    WHERE tci.designation IS NOT NULL
-                """)
-                
-                # Préparer les données pour executemany
-                temp_data = []
-                for product in products_to_insert:
-                    temp_data.append((
-                        product['designation'],
-                        product['unite'],
-                        product['quantite'],
-                        product['prixAchat'],
-                        product['coefficient'],
-                        product['prixVente'],
-                        product['category_id']
-                    ))
-                
-                # Insertion en masse dans la table temporaire
-                cursor.executemany("""
-                    INSERT INTO temp_catalogue_import 
-                    (designation, unite, quantite, prix_achat, coefficient, prix_vente, category_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, temp_data)
-                
-                cursor.execute("""
-                    INSERT INTO unit (name)
-                    SELECT DISTINCT unite
-                    FROM temp_catalogue_import
-                    WHERE unite IS NOT NULL 
-                    AND unite != ''
-                    AND NOT EXISTS (
-                        SELECT 1 FROM unit WHERE unit.name = temp_catalogue_import.unite
-                    )
-                """)
-                
-                cursor.execute("""
-                    INSERT INTO product (designation, purchase_unit_price, sale_unit_price, coefficient, unit_id, category_id)
-                    SELECT designation, prix_achat, prix_vente, coefficient, unite_id, category_id
-                    FROM temp_import_with_units
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM product 
-                        WHERE product.designation = temp_import_with_units.designation 
-                        AND product.category_id = temp_import_with_units.category_id
-                    )
-                """)
-                
-                # Récupérer le nombre de produits insérés
-                cursor.execute("SELECT COUNT(*) FROM temp_catalogue_import")
-                count = cursor.fetchone()[0]
-                print(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
-                
-                messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
-                
-                # La table temporaire est automatiquement supprimée à la fin du with
+            with transaction.atomic():
+                category = Category.objects.get_or_create(name=category_name)[0]
+
+                with connection.cursor() as cursor:
+                    # Créer la table temporaire
+                    cursor.execute("""
+                        CREATE TEMP TABLE temp_catalogue_import (
+                            designation VARCHAR(500),
+                            unite VARCHAR(50),
+                            quantite DECIMAL,
+                            prix_achat DECIMAL,
+                            coefficient DECIMAL,
+                            prix_vente DECIMAL,
+                            category_id INTEGER
+                        )
+                    """)
+                    
+                    cursor.execute("""
+                        CREATE TEMP VIEW temp_import_with_units AS
+                        SELECT 
+                            tci.designation,
+                            tci.unite,
+                            tci.quantite,
+                            tci.prix_achat,
+                            tci.coefficient,
+                            tci.prix_vente,
+                            tci.category_id,
+                            u.id as unite_id
+                        FROM temp_catalogue_import tci
+                        JOIN unit u ON u.name = tci.unite
+                        WHERE tci.designation IS NOT NULL
+                    """)
+                    
+                    # Préparer les données pour executemany
+                    temp_data = []
+                    for product in products_to_insert:
+                        temp_data.append((
+                            product['designation'],
+                            product['unite'],
+                            product['quantite'],
+                            product['prixAchat'],
+                            product['coefficient'],
+                            product['prixVente'],
+                            category.id,
+                        ))
+                    
+                    # Insertion en masse dans la table temporaire
+                    cursor.executemany("""
+                        INSERT INTO temp_catalogue_import 
+                        (designation, unite, quantite, prix_achat, coefficient, prix_vente, category_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, temp_data)
+                    
+                    cursor.execute("""
+                        INSERT INTO unit (name)
+                        SELECT DISTINCT unite
+                        FROM temp_catalogue_import
+                        WHERE unite IS NOT NULL 
+                        AND unite != ''
+                        AND NOT EXISTS (
+                            SELECT 1 FROM unit WHERE unit.name = temp_catalogue_import.unite
+                        )
+                    """)
+                    
+                    cursor.execute("""
+                        INSERT INTO product (designation, purchase_unit_price, sale_unit_price, coefficient, unit_id, category_id)
+                        SELECT designation, prix_achat, prix_vente, coefficient, unite_id, category_id
+                        FROM temp_import_with_units
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM product 
+                            WHERE product.designation = temp_import_with_units.designation 
+                            AND product.category_id = temp_import_with_units.category_id
+                        )
+                    """)
+                    
+                    # Récupérer le nombre de produits insérés
+                    cursor.execute("SELECT COUNT(*) FROM temp_catalogue_import")
+                    count = cursor.fetchone()[0]
+                    print(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
+                    
+                    messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
+                    
+                    # La table temporaire est automatiquement supprimée à la fin du with
         else:
             messages.warning(request, "Aucune donnée valide à importer")
             return redirect('import_page')
