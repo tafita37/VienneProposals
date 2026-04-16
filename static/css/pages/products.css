@@ -91,6 +91,60 @@
 	margin-bottom: 0;
 }
 
+.category-picker {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	gap: 0.75rem;
+	padding: 0.25rem 0;
+}
+
+.category-chip {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.75rem 0.9rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	cursor: pointer;
+	user-select: none;
+	transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.category-chip:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.category-chip input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.category-chip span {
+	font-weight: 600;
+	color: var(--text-dark);
+	line-height: 1.2;
+}
+
+.category-chip.is-selected {
+	background: rgba(88, 121, 194, 0.08);
+	border-color: var(--accent);
+	box-shadow: 0 8px 20px rgba(88, 121, 194, 0.16);
+}
+
+.category-chip.is-selected span {
+	color: var(--accent);
+}
+
+.category-picker-hint {
+	margin-top: 0.5rem;
+	font-size: 0.85rem;
+	color: var(--text-light);
+}
+
 @media (max-width: 768px) {
 	.delete-confirm-actions {
 		flex-direction: column-reverse;
@@ -113,5 +167,9 @@
 
 	.product-modal-content .price-fields-row .form-group {
 		margin-bottom: 1.5rem;
+	}
+
+	.category-picker {
+		grid-template-columns: 1fr;
 	}
 }

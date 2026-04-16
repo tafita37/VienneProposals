@@ -22,7 +22,7 @@
 <div class="card" style="margin-bottom: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>Liste des produits</h2>
-        <button id="addProductBtn" class="btn btn-primary" style="max-width: 220px;">+ Ajouter un
+        <button id="addProductBtn" type="button" class="btn btn-primary" style="max-width: 220px;">+ Ajouter un
             produit</button>
     </div>
 </div>
@@ -89,7 +89,7 @@
                         {{product.designation}}
                     </td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.category.name}}
+                        {{product.category_names|default:product.category_name|default:"Non catégorisé"}}
                     </td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                         {{product.unit.name}}
@@ -106,8 +106,8 @@
                             data-edit-product="true"
                             data-product-id="{{ product.id }}"
                             data-product-designation="{{ product.designation|escape }}"
-                            data-product-category-id="{{ product.category.id }}"
-                            data-product-category-name="{{ product.category.name|escape }}"
+                            data-product-category-ids="{{ product.category_ids_csv|escape }}"
+                            data-product-category-names="{{ product.category_names|escape }}"
                             data-product-unit-id="{{ product.unit.id }}"
                             data-product-unit-name="{{ product.unit.name|escape }}"
                             data-product-purchase-price="{{ product.purchase_unit_price }}"
@@ -149,7 +149,7 @@
     <div class="modal-content product-modal-content">
         <div class="modal-header">
             <h3 id="productModalTitle">Ajouter un produit</h3>
-            <button class="modal-close" onclick="closeProductModal()">✕</button>
+            <button type="button" class="modal-close" onclick="closeProductModal()">✕</button>
         </div>
         <form action="{% url 'saveProduct' %}" method="post">
             {% csrf_token %}
@@ -167,18 +167,16 @@
                     />
                 </div>
                 <div class="form-group">
-                    <label for="productCategory">Catégorie</label>
-                    <select 
-                        id="productCategory" 
-                        class="custom-select" 
-                        required 
-                        name="category_id"
-                    >
-                        <option value="">Sélectionner une catégorie</option>
+                    <label for="productCategory">Catégories</label>
+                    <div id="productCategory" class="category-picker" role="group" aria-label="Sélection des catégories">
                         {% for category in categories %}
-                        <option value="{{category.id}}">{{category.name}}</option>
+                        <label class="category-chip">
+                            <input type="checkbox" name="category_ids" value="{{category.id}}">
+                            <span>{{ category.name }}</span>
+                        </label>
                         {% endfor %}
-                    </select>
+                    </div>
+                    <div class="category-picker-hint">Cliquez sur une ou plusieurs catégories pour les sélectionner.</div>
                 </div>
                 <div class="form-group">
                     <label for="productUnit">Unité</label>
@@ -235,7 +233,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeProductModal()">Annuler</button>
+                <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Annuler</button>
                 <button id="saveProductBtn" type="submit" class="btn btn-primary">
                     Enregistrer
                 </button>

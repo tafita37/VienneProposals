@@ -16,6 +16,21 @@ from commercial.metier.Product import Product
 from commercial.metier.ProposalProduct import ProposalProduct
 
 
+def _product_category_label(product):
+    if product is None:
+        return 'Non catégorisé'
+
+    category_names = getattr(product, 'category_names', '')
+    if category_names:
+        return category_names
+
+    category = getattr(product, 'category', None)
+    if category is not None and getattr(category, 'name', ''):
+        return category.name
+
+    return 'Non catégorisé'
+
+
 def _compute_proposal_total(list_proposal):
     total = 0.0
 
@@ -59,13 +74,13 @@ def catalogue_page(request):
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
     allCategory = Category.objects.all()
-    allProducts = Product.objects.all()
+    allProducts = Product.objects.select_related('unit').prefetch_related('categories').all()
 
     if nom:
         allProducts = allProducts.filter(designation__icontains=nom)
 
     if category_id:
-        allProducts = allProducts.filter(category_id=category_id)
+        allProducts = allProducts.filter(categories__id=category_id).distinct()
 
     proposal_by_product = {}
     if isinstance(list_proposal, list):
@@ -146,20 +161,21 @@ def get_products_api(request):
                 'quantity': max(0.0, quantity),
             }
     
-    products = Product.objects.all()
+    products = Product.objects.select_related('unit').prefetch_related('categories').all()
     
     if nom:
         products = products.filter(designation__icontains=nom)
     
     if category_id:
-        products = products.filter(category_id=category_id)
+        products = products.filter(categories__id=category_id).distinct()
     
     data = [
         {
             'id': p.id,
             'designation': p.designation,
             'category_id': p.category_id,
-            'category_name': p.category.name,
+            'category_ids': p.category_ids,
+            'category_name': _product_category_label(p),
             'unit_name': p.unit.name,
             'sale_unit_price': float(p.sale_unit_price),
             'coefficient': proposal_by_product.get(p.id, {}).get('coefficient', float(p.coefficient)),
@@ -233,13 +249,13 @@ def save_selected_products_api(request):
         if product_id <= 0 or quantity <= 0:
             return
 
-        if prix_unitaire_achat <= 0 or not designation or not category_name:
-            product = Product.objects.filter(
-                id=product_id
-            ).only('id', 'designation', 'category', 'purchase_unit_price', 'sale_unit_price').first()
+            if prix_unitaire_achat <= 0 or not designation or not category_name:
+                product = Product.objects.select_related('unit').prefetch_related('categories').filter(
+                    id=product_id
+                ).first()
             if product is not None:
                 designation = designation or str(product.designation)
-                category_name = category_name or str(product.category.name)
+                category_name = category_name or _product_category_label(product)
                 if prix_unitaire_vente <= 0:
                     prix_unitaire_vente = float(product.sale_unit_price)
                 if prix_unitaire_achat <= 0:
@@ -284,9 +300,9 @@ def save_selected_products_api(request):
         if product_id <= 0 or quantity <= 0:
             continue
 
-        product = Product.objects.filter(
+        product = Product.objects.select_related('unit').prefetch_related('categories').filter(
             id=product_id
-        ).only('id', 'designation', 'category', 'purchase_unit_price', 'sale_unit_price').first()
+        ).first()
         if not product:
             continue
 
@@ -298,7 +314,7 @@ def save_selected_products_api(request):
             'product': {
                 'id': product.id,
                 'designation': product.designation,
-                'category_name': product.category.name,
+                'category_name': _product_category_label(product),
                 'sale_unit_price': sale_unit_price,
                 'purchase_unit_price': purchase_unit_price,
                 'prix_unitaire_vente': sale_unit_price,
@@ -762,7 +778,7 @@ def proposition_detail(request):
         designation = f"Produit {proposal_product.id}"
 
         if proposal_product.product is not None:
-            category_name = proposal_product.product.category.name or 'Non catégorisé'
+            category_name = _product_category_label(proposal_product.product)
             designation = proposal_product.product.designation or designation
 
         if category_name not in summary_by_category:

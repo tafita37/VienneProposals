@@ -101,12 +101,13 @@
         catalogueTable.innerHTML = '';
 
         products.forEach(product => {
+            const categoryName = product.category_names || product.category_name || 'Non catégorisé';
             const row = document.createElement('tr');
             row.setAttribute('data-category-id', product.category_id);
             row.setAttribute('data-product-id', product.id);
             row.innerHTML = `
                 <td>${product.designation}</td>
-                <td>${product.category_name}</td>
+                <td>${categoryName}</td>
                 <td>${product.unit_name}</td>
                 <td>${euroFormatter.format(product.sale_unit_price)} €</td>
                 <td><input type="number" class="input-coefficient" value="1" min="0.1" step="0.1"></td>

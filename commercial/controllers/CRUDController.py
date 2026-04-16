@@ -36,7 +36,7 @@ def liste_categorie_page(request):
 @require_GET
 @admin_required
 def liste_product_page(request):
-    all_products = Product.objects.all()
+    all_products = Product.objects.select_related('unit').prefetch_related('categories').all()
     all_categories = Category.objects.all()
     all_units = Unit.objects.all()
     return render(
@@ -52,20 +52,21 @@ def get_products_api(request):
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
 
-    products = Product.objects.select_related('category', 'unit').all()
+    products = Product.objects.select_related('unit').prefetch_related('categories').all()
 
     if nom:
         products = products.filter(designation__icontains=nom)
 
     if category_id:
-        products = products.filter(category_id=category_id)
+        products = products.filter(categories__id=category_id).distinct()
 
     data = [
         {
             'id': product.id,
             'designation': product.designation,
             'category_id': product.category_id,
-            'category_name': product.category.name,
+            'category_name': product.category_names or 'Non catégorisé',
+            'category_ids': product.category_ids,
             'unit_id': product.unit_id,
             'unit_name': product.unit.name,
             'purchase_unit_price': float(product.purchase_unit_price),
@@ -183,25 +184,48 @@ def saveCategorie(request):
 @require_POST
 @admin_required
 def saveProduct(request):
-    id= request.POST.get('id')
+    def _extract_category_ids():
+        raw_category_ids = [value for value in request.POST.getlist('category_ids') if value]
+        if not raw_category_ids:
+            single_category_id = request.POST.get('category_id')
+            if single_category_id:
+                raw_category_ids = [single_category_id]
+
+        category_ids = []
+        for raw_category_id in raw_category_ids:
+            try:
+                category_ids.append(int(raw_category_id))
+            except (TypeError, ValueError):
+                continue
+        return category_ids
+
+    category_ids = _extract_category_ids()
+
+    id = request.POST.get('id')
     if id:
-        product = Product.objects.get(id=id)
+        product = Product.objects.filter(id=id).first()
+        if product is None:
+            return redirect('liste_product_page')
+
         product.designation = request.POST.get('designation')
         product.purchase_unit_price = request.POST.get('purchase_unit_price')
         product.sale_unit_price = request.POST.get('sale_unit_price')
         product.coefficient = request.POST.get('coefficient')
         product.unit_id = request.POST.get('unit_id')
     else:
-        category_id = request.POST.get('category_id')
         product = Product(
             designation=request.POST.get('designation'),
             purchase_unit_price=request.POST.get('purchase_unit_price'),
             sale_unit_price=request.POST.get('sale_unit_price'),
             coefficient=request.POST.get('coefficient'),
             unit_id=request.POST.get('unit_id'),
-            category_id=category_id
         )
+
     product.save()
+    if category_ids:
+        product.categories.set(Category.objects.filter(id__in=category_ids))
+    else:
+        product.categories.clear()
     return redirect('liste_product_page')
 
 

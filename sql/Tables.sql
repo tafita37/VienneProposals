@@ -40,10 +40,17 @@ CREATE TABLE product(
    sale_unit_price DOUBLE PRECISION NOT NULL,
    coefficient NUMERIC(15,2) NOT NULL,
    unit_id INTEGER NOT NULL,
-   category_id INTEGER NOT NULL,
    PRIMARY KEY(id),
    UNIQUE(designation),
-   FOREIGN KEY(unit_id) REFERENCES unit(id),
+   FOREIGN KEY(unit_id) REFERENCES unit(id)
+);
+
+create table product_category(
+   id SERIAL,
+   product_id INTEGER NOT NULL,
+   category_id INTEGER NOT NULL,
+   PRIMARY KEY(id),
+   FOREIGN KEY(product_id) REFERENCES product(id),
    FOREIGN KEY(category_id) REFERENCES category(id)
 );
 

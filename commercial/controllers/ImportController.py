@@ -8,6 +8,8 @@ import re
 from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
 from commercial.metier.Product import Product
+from commercial.metier.ProductCategory import ProductCategory
+from commercial.metier.Unit import Unit
 from unidecode import unidecode
 
 @require_GET
@@ -40,9 +42,17 @@ def read_excel_file(request):
             messages.error(request, "La catégorie est introuvable (cellule I2 vide ou invalide).")
             return redirect('import_page')
 
-        category_name = ' '.join(raw_category.strip().split()[:-1]).strip()
-        if not category_name:
-            category_name = raw_category.strip()
+        category_name_source = ' '.join(raw_category.strip().split()[:-1]).strip()
+        if not category_name_source:
+            category_name_source = raw_category.strip()
+
+        category_names = [
+            part.strip()
+            for part in re.split(r'[;,/|]+', category_name_source)
+            if part.strip()
+        ]
+        if not category_names:
+            category_names = [category_name_source]
 
         nb_vide = 0
         products_to_insert = []  # Liste pour stocker toutes les données
@@ -146,21 +156,6 @@ def read_excel_file(request):
             if product['excel_row'] not in invalid_rows
         ]
 
-        if candidate_products:
-            candidate_designations = [product['designation'] for product in candidate_products]
-            existing_designations = set(
-                Product.objects.filter(designation__in=candidate_designations)
-                .values_list('designation', flat=True)
-            )
-
-            for product in candidate_products:
-                if product['designation'] in existing_designations:
-                    row_errors.append(
-                        f"Ligne Excel {product['excel_row']}: désignation déjà existante en base -> "
-                        f"'{product['designation']}'."
-                    )
-                    invalid_rows.add(product['excel_row'])
-
         products_to_insert = [
             product for product in candidate_products
             if product['excel_row'] not in invalid_rows
@@ -175,91 +170,87 @@ def read_excel_file(request):
                 messages.error(request, row_error, extra_tags='excel-row-error')
             return redirect('import_page')
         
-        # Insertion en masse dans PostgreSQL
         if products_to_insert:
             with transaction.atomic():
-                category = Category.objects.get_or_create(name=category_name)[0]
+                categories = [Category.objects.get_or_create(name=category_name)[0] for category_name in category_names]
 
-                with connection.cursor() as cursor:
-                    # Créer la table temporaire
-                    cursor.execute("""
-                        CREATE TEMP TABLE temp_catalogue_import (
-                            designation VARCHAR(500),
-                            unite VARCHAR(50),
-                            quantite DECIMAL,
-                            prix_achat DECIMAL,
-                            coefficient DECIMAL,
-                            prix_vente DECIMAL,
-                            category_id INTEGER
+                unit_names = sorted({product['unite'] for product in products_to_insert if product['unite']})
+                units = {
+                    unit.name: unit
+                    for unit in Unit.objects.filter(name__in=unit_names)
+                }
+
+                for unit_name in unit_names:
+                    if unit_name not in units:
+                        units[unit_name] = Unit.objects.create(name=unit_name)
+
+                existing_products = {
+                    product.designation: product
+                    for product in Product.objects.filter(
+                        designation__in=[product['designation'] for product in products_to_insert]
+                    ).only('id', 'designation')
+                }
+
+                product_objects = []
+                product_rows = []
+                for product_data in products_to_insert:
+                    existing_product = existing_products.get(product_data['designation'])
+                    if existing_product is not None:
+                        product_rows.append(existing_product)
+                        continue
+
+                    unit_obj = units.get(product_data['unite'])
+                    if unit_obj is None:
+                        continue
+
+                    product_objects.append(Product(
+                        designation=product_data['designation'],
+                        purchase_unit_price=product_data['prixAchat'],
+                        sale_unit_price=product_data['prixVente'],
+                        coefficient=product_data['coefficient'],
+                        unit=unit_obj,
+                    ))
+                    product_rows.append(product_data)
+
+                created_products = Product.objects.bulk_create(product_objects)
+                new_products_by_designation = {
+                    product.designation: product
+                    for product in created_products
+                }
+                product_category_objects = []
+                linked_existing_products = 0
+                for product_row in products_to_insert:
+                    product = existing_products.get(product_row['designation']) or new_products_by_designation.get(product_row['designation'])
+                    if product is None:
+                        continue
+
+                    for category in categories:
+                        product_category_objects.append(
+                            ProductCategory(product=product, category=category)
                         )
-                    """)
-                    
-                    cursor.execute("""
-                        CREATE TEMP VIEW temp_import_with_units AS
-                        SELECT 
-                            tci.designation,
-                            tci.unite,
-                            tci.quantite,
-                            tci.prix_achat,
-                            tci.coefficient,
-                            tci.prix_vente,
-                            tci.category_id,
-                            u.id as unite_id
-                        FROM temp_catalogue_import tci
-                        JOIN unit u ON u.name = tci.unite
-                        WHERE tci.designation IS NOT NULL
-                    """)
-                    
-                    # Préparer les données pour executemany
-                    temp_data = []
-                    for product in products_to_insert:
-                        temp_data.append((
-                            product['designation'],
-                            product['unite'],
-                            product['quantite'],
-                            product['prixAchat'],
-                            product['coefficient'],
-                            product['prixVente'],
-                            category.id,
-                        ))
-                    
-                    # Insertion en masse dans la table temporaire
-                    cursor.executemany("""
-                        INSERT INTO temp_catalogue_import 
-                        (designation, unite, quantite, prix_achat, coefficient, prix_vente, category_id)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, temp_data)
-                    
-                    cursor.execute("""
-                        INSERT INTO unit (name)
-                        SELECT DISTINCT unite
-                        FROM temp_catalogue_import
-                        WHERE unite IS NOT NULL 
-                        AND unite != ''
-                        AND NOT EXISTS (
-                            SELECT 1 FROM unit WHERE unit.name = temp_catalogue_import.unite
-                        )
-                    """)
-                    
-                    cursor.execute("""
-                        INSERT INTO product (designation, purchase_unit_price, sale_unit_price, coefficient, unit_id, category_id)
-                        SELECT designation, prix_achat, prix_vente, coefficient, unite_id, category_id
-                        FROM temp_import_with_units
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM product 
-                            WHERE product.designation = temp_import_with_units.designation 
-                            AND product.category_id = temp_import_with_units.category_id
-                        )
-                    """)
-                    
-                    # Récupérer le nombre de produits insérés
-                    cursor.execute("SELECT COUNT(*) FROM temp_catalogue_import")
-                    count = cursor.fetchone()[0]
-                    print(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
-                    
-                    messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category.name}")
-                    
-                    # La table temporaire est automatiquement supprimée à la fin du with
+
+                    if product_row['designation'] in existing_products:
+                        linked_existing_products += 1
+
+                if product_category_objects:
+                    ProductCategory.objects.bulk_create(product_category_objects, ignore_conflicts=True)
+
+                count = len(created_products)
+                category_label = ', '.join(category.name for category in categories)
+                if count and linked_existing_products:
+                    messages.success(
+                        request,
+                        f"Import réussi - {count} produit(s) créés et {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
+                    )
+                elif count:
+                    messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category_label}")
+                elif linked_existing_products:
+                    messages.success(
+                        request,
+                        f"Import réussi - {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
+                    )
+                else:
+                    messages.warning(request, "Aucun produit nouveau ni liaison de catégorie n'a pu être créé.")
         else:
             messages.warning(request, "Aucune donnée valide à importer")
             return redirect('import_page')

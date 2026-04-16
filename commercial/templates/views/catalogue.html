@@ -53,9 +53,9 @@
             </thead>
             <tbody id="catalogueTable">
                 {% for product in products %}
-                <tr data-category-id="{{ product.category.id }}" data-product-id="{{ product.id }}">
+                <tr data-category-id="{{ product.category_id }}" data-product-id="{{ product.id }}">
                     <td>{{ product.designation }}</td>
-                    <td>{{ product.category.name }}</td>
+                    <td>{{ product.category_names|default:product.category_name|default:"Non catégorisé" }}</td>
                     <td>{{ product.unit.name }}</td>
                     <td>{{ product.sale_unit_price|floatformat:2 }} €</td>
                     {% localize off %}
