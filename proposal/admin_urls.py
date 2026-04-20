@@ -16,13 +16,20 @@ Including another URLconf
 """
 from django.urls import include, path
 
-from authentification.controllers.UserController import login_admin, login_admin_page
+from authentification.controllers.UserController import (
+    change_admin_password,
+    change_admin_password_page,
+    login_admin,
+    login_admin_page,
+)
 from commercial.controllers.ImportController import import_page, read_excel_file
 from commercial.controllers.StatController import admin_page, dashboard_page
 
 urlpatterns = [
     path('login_admin_page/', login_admin_page, name='login_admin_page'),
     path('login_admin/', login_admin, name='login_admin'),
+    path('change_password_page/', change_admin_password_page, name='change_admin_password_page'),
+    path('change_password/', change_admin_password, name='change_admin_password'),
     path('dashboard_page/', dashboard_page, name='dashboard_page'),
     path('administration_page/', admin_page, name='admin_page'),
     path('client/', include('commercial.url_crud.client_url')),

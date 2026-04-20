@@ -6,6 +6,7 @@ class AdminUser(AbstractBaseUser):
     username = models.CharField(max_length=150, unique=True, null=False, db_column='username')
     first_name = models.CharField(max_length=100, db_column='first_name')
     last_name = models.CharField(max_length=100, db_column='last_name')
+    email = models.EmailField(unique=True, db_column='email')
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'username'
 
