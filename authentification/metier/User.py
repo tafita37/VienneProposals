@@ -9,6 +9,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, db_column='email')
     password = models.TextField(db_column='password')
     failed_login_attempts = models.IntegerField(default=0, db_column='failed_login_attempts')
+    # must_change_password = models.BooleanField(default=True)
     REQUIRED_FIELDS = ['email']
 
     class Meta:

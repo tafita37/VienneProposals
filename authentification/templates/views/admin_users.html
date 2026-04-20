@@ -44,7 +44,7 @@
                     <th style="padding: 0.75rem; text-align: left;">Username</th>
                     <th style="padding: 0.75rem; text-align: left;">Nom complet</th>
                     <th style="padding: 0.75rem; text-align: left;">Email</th>
-                    <th style="padding: 0.75rem; text-align: left;">Roles</th>
+                    <!-- <th style="padding: 0.75rem; text-align: left;">Roles</th> -->
                     <th style="padding: 0.75rem; text-align: left;">Actions</th>
                 </tr>
             </thead>
@@ -54,13 +54,13 @@
                     <td style="padding: 0.75rem;">{{ user_item.username }}</td>
                     <td style="padding: 0.75rem;">{{ user_item.first_name }} {{ user_item.last_name }}</td>
                     <td style="padding: 0.75rem;">{{ user_item.email }}</td>
-                    <td style="padding: 0.75rem;">
+                    <!-- <td style="padding: 0.75rem;">
                         {% for user_role in user_item.userrole_set.all %}
                             <span style="display: inline-block; background: #f1f4f8; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; margin: 0 0.25rem 0.25rem 0;">{{ user_role.role.name }}</span>
                         {% empty %}
                             <span style="color: var(--text-light);">-</span>
                         {% endfor %}
-                    </td>
+                    </td> -->
                     <td style="padding: 0.75rem; white-space: nowrap;">
                         <div style="display: inline-flex; gap: 0.5rem;">
                             <a href="{% url 'edit_user_admin_page' user_item.id %}" class="btn btn-secondary">Modifier</a>

@@ -9,6 +9,9 @@
 {% block content %}
 <div class="card" style="max-width: 900px; margin: 0 auto;">
     <h2>Nouvel utilisateur</h2>
+    <p style="margin: 0.5rem 0 1rem 0; color: var(--text-light);">
+        Le mot de passe est genere automatiquement et envoye par email apres creation.
+    </p>
 
     {% if messages %}
     <div style="margin: 1rem 0;">
@@ -43,12 +46,7 @@
         <div class="form-group">
             <label for="email">Email</label>
             <input type="email" id="email" name="email" required>
-        </div>
-
-        <div class="form-group">
-            <label for="password">Mot de passe</label>
-            <input type="password" id="password" name="password" required>
-        </div>
+        </div>  
 
         <!-- <div class="form-group">
             <label for="role_ids">Rôles</label>

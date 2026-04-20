@@ -3,11 +3,50 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.db import IntegrityError
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import IntegrityError, transaction
+from django.core import signing
+from django.urls import reverse
+from django.utils.crypto import get_random_string
+from django.contrib.auth import update_session_auth_hash
 
 from authentification.backends import AdminUserBackend
 from authentification.decoratos import admin_required
+from authentification.decoratos import user_required
 from authentification.models import Role, User, UserRole
+
+import logging
+logger = logging.getLogger(__name__)
+
+PASSWORD_TOKEN_MAX_AGE = 604800
+PASSWORD_TOKEN_SALT = 'password-reset-v1'
+
+
+def _build_password_token(user_id, account_type, purpose):
+    return signing.dumps(
+        {
+            'user_id': int(user_id),
+            'account_type': account_type,
+            'purpose': purpose,
+        },
+        salt=PASSWORD_TOKEN_SALT,
+    )
+
+
+def _read_password_token(token, expected_account_type, expected_purpose):
+    payload = signing.loads(
+        token,
+        salt=PASSWORD_TOKEN_SALT,
+        max_age=PASSWORD_TOKEN_MAX_AGE,
+    )
+
+    if payload.get('account_type') != expected_account_type:
+        raise signing.BadSignature('Type de compte invalide')
+    if payload.get('purpose') != expected_purpose:
+        raise signing.BadSignature('Objectif de token invalide')
+
+    return payload.get('user_id')
 
 @require_GET
 def login_user_page(request):
@@ -34,6 +73,141 @@ def login_user(request):
     else :
         messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
         return redirect('login_user_page')
+
+
+@require_GET
+@user_required
+def change_user_password_page(request):
+    return render(request, "views/change_password_user.html")
+
+
+@require_POST
+@user_required
+def change_user_password(request):
+    current_password = (request.POST.get('current_password') or '').strip()
+    new_password = (request.POST.get('new_password') or '').strip()
+    confirm_password = (request.POST.get('confirm_password') or '').strip()
+
+    if not request.user.check_password(current_password):
+        messages.error(request, "Le mot de passe actuel est incorrect")
+        return render(request, "views/change_password_user.html")
+
+    if not new_password or not confirm_password:
+        messages.error(request, "Veuillez remplir tous les champs")
+        return render(request, "views/change_password_user.html")
+
+    if new_password != confirm_password:
+        messages.error(request, "Les mots de passe ne correspondent pas")
+        return render(request, "views/change_password_user.html")
+
+    if len(new_password) < 8:
+        messages.error(request, "Le mot de passe doit contenir au moins 8 caractères")
+        return render(request, "views/change_password_user.html")
+
+    request.user.set_password(new_password)
+    request.user.save(update_fields=['password'])
+    update_session_auth_hash(request, request.user)
+
+    messages.success(request, "Mot de passe modifié avec succès")
+    return redirect('catalogue_page')
+
+
+@require_GET
+@admin_required
+def change_admin_password_page(request):
+    return render(request, "views/change_password_admin.html")
+
+
+@require_POST
+@admin_required
+def change_admin_password(request):
+    current_password = (request.POST.get('current_password') or '').strip()
+    new_password = (request.POST.get('new_password') or '').strip()
+    confirm_password = (request.POST.get('confirm_password') or '').strip()
+
+    if not request.user.check_password(current_password):
+        messages.error(request, "Le mot de passe actuel est incorrect")
+        return render(request, "views/change_password_admin.html")
+
+    if not new_password or not confirm_password:
+        messages.error(request, "Veuillez remplir tous les champs")
+        return render(request, "views/change_password_admin.html")
+
+    if new_password != confirm_password:
+        messages.error(request, "Les mots de passe ne correspondent pas")
+        return render(request, "views/change_password_admin.html")
+
+    if len(new_password) < 8:
+        messages.error(request, "Le mot de passe doit contenir au moins 8 caractères")
+        return render(request, "views/change_password_admin.html")
+
+    request.user.set_password(new_password)
+    request.user.save(update_fields=['password'])
+    update_session_auth_hash(request, request.user)
+
+    messages.success(request, "Mot de passe administrateur modifié avec succès")
+    return redirect('dashboard_page')
+
+
+@require_GET
+def define_password_page(request):
+    token = (request.GET.get('token') or '').strip()
+    if not token:
+        messages.error(request, "Lien invalide")
+        return redirect('login_user_page')
+
+    try:
+        user_id = _read_password_token(token, 'user', 'define_password')
+    except signing.BadSignature:
+        messages.error(request, "Lien invalide ou expiré")
+        return redirect('login_user_page')
+
+    user = User.objects.filter(id=user_id, is_active=True).first()
+    if not user:
+        messages.error(request, "Utilisateur introuvable")
+        return redirect('login_user_page')
+
+    return render(request, "views/set_password.html", {'token': token, 'username': user.username})
+
+
+@require_POST
+def define_password(request):
+    token = (request.POST.get('token') or '').strip()
+    new_password = (request.POST.get('new_password') or '').strip()
+    confirm_password = (request.POST.get('confirm_password') or '').strip()
+
+    if not token:
+        messages.error(request, "Lien invalide")
+        return redirect('login_user_page')
+
+    try:
+        user_id = _read_password_token(token, 'user', 'define_password')
+    except signing.BadSignature:
+        messages.error(request, "Lien invalide ou expiré")
+        return redirect('login_user_page')
+
+    user = User.objects.filter(id=user_id, is_active=True).first()
+    if not user:
+        messages.error(request, "Utilisateur introuvable")
+        return redirect('login_user_page')
+
+    if not new_password or not confirm_password:
+        messages.error(request, "Veuillez remplir tous les champs")
+        return render(request, "views/set_password.html", {'token': token, 'username': user.username})
+
+    if new_password != confirm_password:
+        messages.error(request, "Les mots de passe ne correspondent pas")
+        return render(request, "views/set_password.html", {'token': token, 'username': user.username})
+
+    if len(new_password) < 8:
+        messages.error(request, "Le mot de passe doit contenir au moins 8 caractères")
+        return render(request, "views/set_password.html", {'token': token, 'username': user.username})
+
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
+
+    messages.success(request, "Mot de passe défini avec succès. Vous pouvez vous connecter")
+    return redirect('login_user_page')
     
 @require_POST
 def login_admin(request):
@@ -108,32 +282,63 @@ def save_user_admin(request):
     first_name = (request.POST.get('first_name') or '').strip()
     last_name = (request.POST.get('last_name') or '').strip()
     email = (request.POST.get('email') or '').strip()
-    password = request.POST.get('password') or ''
     role_ids = request.POST.getlist('role_ids')
 
-    if not username or not first_name or not last_name or not email or not password:
+    if not username or not first_name or not last_name or not email:
         messages.error(request, "Tous les champs obligatoires doivent etre remplis")
         return redirect('new_user_admin_page')
 
     try:
-        user = User(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
+        # Exclude ambiguous chars for easier manual typing.
+        generated_password = get_random_string(
+            12,
+            allowed_chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*?'
         )
-        user.set_password(password)
-        user.save()
 
-        for role_id in role_ids:
-            role = Role.objects.filter(id=role_id).first()
-            if role:
-                UserRole.objects.get_or_create(user=user, role=role)
+        with transaction.atomic():
+            user = User(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+            )
+            user.set_password(generated_password)
+            user.save()
+
+            setup_token = _build_password_token(user.id, 'user', 'define_password')
+            setup_url = request.build_absolute_uri(
+                f"{reverse('define_password_page')}?token={setup_token}"
+            )
+
+            for role_id in role_ids:
+                role = Role.objects.filter(id=role_id).first()
+                if role:
+                    UserRole.objects.get_or_create(user=user, role=role)
+
+            send_mail(
+                subject="Vos identifiants Vienne Agencement",
+                message=(
+                    f"Bonjour {first_name} {last_name},\n\n"
+                    "Votre compte utilisateur vient d'etre cree.\n"
+                    f"Nom d'utilisateur: {username}\n"
+                    "Pour definir votre mot de passe, cliquez sur le lien suivant:\n"
+                    f"{setup_url}\n\n"
+                    "Ce lien est valide pendant 7 jours.\n"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
 
         messages.success(request, "Utilisateur cree avec succes")
         return redirect('list_users_admin_page')
     except IntegrityError:
         messages.error(request, "Nom d'utilisateur ou email deja utilise")
+        return redirect('new_user_admin_page')
+    except Exception as e:
+        messages.error(request, "Utilisateur non cree: impossible d'envoyer l'email d'acces")
+        logger.error(f"ERREUR EMAIL: {repr(e)}")
+        logger.error(f"TYPE: {type(e).__name__}")
         return redirect('new_user_admin_page')
 
 
