@@ -19,8 +19,12 @@ from django.urls import include, path
 from authentification.controllers.UserController import (
     change_admin_password,
     change_admin_password_page,
+    forgot_password_admin_page,
     login_admin,
     login_admin_page,
+    reset_admin_password,
+    reset_admin_password_page,
+    send_admin_reset_link,
 )
 from commercial.controllers.ImportController import import_page, read_excel_file
 from commercial.controllers.StatController import admin_page, dashboard_page
@@ -30,6 +34,10 @@ urlpatterns = [
     path('login_admin/', login_admin, name='login_admin'),
     path('change_password_page/', change_admin_password_page, name='change_admin_password_page'),
     path('change_password/', change_admin_password, name='change_admin_password'),
+    path('forgot_password_page/', forgot_password_admin_page, name='forgot_password_admin_page'),
+    path('forgot_password/send_link/', send_admin_reset_link, name='send_admin_reset_link'),
+    path('forgot_password/reset_page/', reset_admin_password_page, name='reset_admin_password_page'),
+    path('forgot_password/reset/', reset_admin_password, name='reset_admin_password'),
     path('dashboard_page/', dashboard_page, name='dashboard_page'),
     path('administration_page/', admin_page, name='admin_page'),
     path('client/', include('commercial.url_crud.client_url')),
