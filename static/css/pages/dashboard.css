@@ -106,6 +106,32 @@
 	font-size: 0.9rem;
 }
 
+.commercial-sub-value {
+	margin-top: 0.85rem;
+	font-size: 1.05rem;
+	font-weight: 700;
+	color: var(--text-dark);
+}
+
+.commercial-sub-label {
+	margin-top: 0.2rem;
+	color: var(--text-light);
+	font-size: 0.82rem;
+}
+
+.commercial-profit-chart {
+	margin-top: 1rem;
+	background: rgba(13, 115, 119, 0.03);
+	border: 1px solid rgba(13, 115, 119, 0.12);
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+.commercial-profit-chart canvas {
+	width: 100% !important;
+	height: 280px !important;
+}
+
 .profit-chart {
 	background: rgba(13, 115, 119, 0.03);
 	border: 1px solid rgba(13, 115, 119, 0.12);
@@ -147,5 +173,9 @@
 @media (max-width: 768px) {
 	.profit-chart canvas {
 		height: 220px !important;
+	}
+
+	.commercial-profit-chart canvas {
+		height: 240px !important;
 	}
 }
