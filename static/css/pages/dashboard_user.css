@@ -1,0 +1,127 @@
+/* Styles specifiques: dashboard user */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.stat-box {
+    background: rgba(13, 115, 119, 0.05);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+}
+
+.stat-box.success {
+    background: rgba(39, 174, 96, 0.05);
+    border-left-color: var(--success);
+}
+
+.stat-box.warning {
+    background: rgba(243, 156, 18, 0.05);
+    border-left-color: var(--warning);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.stat-box.success .stat-number {
+    color: var(--success);
+}
+
+.stat-box.warning .stat-number {
+    color: var(--warning);
+}
+
+.stat-label {
+    color: var(--text-light);
+    margin-top: 0.45rem;
+}
+
+.dashboard-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.dashboard-filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.dashboard-year-input {
+    border: 1px solid rgba(13, 115, 119, 0.25);
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.35rem 0.55rem;
+    width: 90px;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    outline: none;
+}
+
+.dashboard-year-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(13, 115, 119, 0.1);
+}
+
+.dashboard-section-meta {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.profit-chart {
+    margin-top: 0.8rem;
+    background: rgba(13, 115, 119, 0.03);
+    border: 1px solid rgba(13, 115, 119, 0.12);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.profit-chart canvas {
+    width: 100% !important;
+    height: 260px !important;
+}
+
+.profit-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.profit-summary > div {
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    background: rgba(13, 115, 119, 0.05);
+    border-left: 4px solid var(--accent);
+}
+
+.summary-label {
+    display: block;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+}
+
+.summary-value {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+}
+
+@media (max-width: 768px) {
+    .profit-chart canvas {
+        height: 220px !important;
+    }
+}
