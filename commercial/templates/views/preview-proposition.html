@@ -124,6 +124,10 @@
 
     <div class="action-buttons">
         <a href="{% url 'new_proposition_page' %}" class="btn btn-secondary">← Retour</a>
+        <form action="{% url 'save_draft_proposition_page' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary" title="Enregistrer cette proposition comme brouillon">📝 Enregistrer en brouillon</button>
+        </form>
         <a href="{% url 'validate_proposition_page' %}" class="btn btn-primary">✅ Valider</a>
         <button type="button" class="btn btn-pdf" onclick="window.print()">📥 Télécharger PDF</button>
     </div>

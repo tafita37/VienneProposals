@@ -9,6 +9,7 @@ class CommercialProposal(models.Model):
 	amount_ttc = models.FloatField()  # DOUBLE PRECISION en SQL
 	client = models.ForeignKey(Client, on_delete=models.PROTECT, db_column='client_id')
 	commercial=models.ForeignKey(User, on_delete=models.PROTECT, db_column='commercial_id')
+	state=models.IntegerField(default=1)  # 0: brouillon, 1: validé
 
 	@property
 	def proposal_product_list(self):
