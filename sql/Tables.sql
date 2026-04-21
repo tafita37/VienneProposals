@@ -112,6 +112,7 @@ CREATE TABLE commercial_proposal(
    client_id INTEGER NOT NULL,
    commercial_id INTEGER NOT NULL,
    state INTEGER NOT NULL DEFAULT 1,  -- 0: brouillon, 1: validé
+   validity_period INTEGER NOT NULL DEFAULT 30,  -- Durée de validité en jours
    PRIMARY KEY(id),
    FOREIGN KEY(client_id) REFERENCES client(id),
    FOREIGN KEY(commercial_id) REFERENCES users(id)

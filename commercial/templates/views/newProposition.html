@@ -59,6 +59,12 @@
                 value="{{ proposal_date_proposition }}"
                 style="max-width: 100%; margin-right: 0.75rem; cursor: pointer;">
         </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="includeTax" style="margin-right: 0.75rem; cursor: pointer;" {% if proposal_include_tva %}checked{% endif %}>
+                <span>Inclure TVA (20%)</span>
+            </label>
+        </div>
         <div>
             <a href="{% url 'appercu_proposition_page' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
                 Proposition</a>

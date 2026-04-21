@@ -43,6 +43,7 @@
                     <th>Numéro</th>
                     <th>Client</th>
                     <th>Date</th>
+                    <th>Valable jusqu'au</th>
                     <th>Montant HT</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -54,6 +55,7 @@
                     <td><strong>PROP-2026-{{ proposition.id }}</strong></td>
                     <td>{{ proposition.client.name }}</td>
                     <td>{{ proposition.date_proposal }}</td>
+                    <td>{{ proposition.validity_date|date:"j F Y" }}</td>
                     <td><strong>{{proposition.amount_ttc|floatformat:2}} €</strong></td>
                     <td>
                         {% if proposition.state == 1 %}
