@@ -48,11 +48,11 @@
             <div>
                 <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);">
                     CONDITIONS</div>
-                <div style="color: var(--text-light); font-size: 0.9rem;">Validité : 30 jours</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">Validité : {{ validity_period|default:30 }} jours</div>
                 <div style="color: var(--text-light); font-size: 0.9rem;">Délai de livraison : 4
                     semaines</div>
                 <div style="color: var(--text-light); font-size: 0.9rem;">Paiement : À la commande</div>
-                <div style="color: var(--text-light); font-size: 0.9rem;">TVA : 20%</div>
+                <div style="color: var(--text-light); font-size: 0.9rem;">TVA : {% if include_tva %}20%{% else %}Non incluse{% endif %}</div>
             </div>
         </div>
     </div>
@@ -105,10 +105,12 @@
             <span>Montant HT</span>
             <span><strong>{{ proposal_total|floatformat:2 }}€</strong></span>
         </div>
+        {% if include_tva %}
         <div class="preview-total-line" style="color: var(--text-light);">
             <span>TVA (20%)</span>
             <span>{{ tva_amount|floatformat:2 }}€</span>
         </div>
+        {% endif %}
         <div class="preview-total-line grand-total">
             <span>MONTANT TOTAL TTC</span>
             <span>{{ total_ttc|floatformat:2 }}€</span>

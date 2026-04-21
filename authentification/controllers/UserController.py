@@ -75,7 +75,7 @@ def login_user(request):
     )
     if user and isinstance(user, User):
         login(request, user)
-        return redirect('catalogue_page')
+        return redirect('dashboard_user_page')
     else :
         messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
         return redirect('login_user_page')

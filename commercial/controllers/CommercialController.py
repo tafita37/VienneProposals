@@ -1,6 +1,6 @@
 # views.py
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
@@ -164,6 +164,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
     session_proposal = request.session.get('proposal', [])
     session_client_id = request.session.get('proposal_client_id')
     session_date_proposition = request.session.get('proposal_date_proposition')
+    session_include_tva = request.session.get('proposal_include_tva', True)
     draft_id_raw = request.session.get('proposal_draft_id')
 
     if not isinstance(session_proposal, list) or len(session_proposal) == 0:
@@ -193,8 +194,9 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
     if len(proposal_rows) == 0:
         return redirect('appercu_proposition_page')
 
+    include_tva = bool(session_include_tva)
     amount_ht = _compute_proposal_total(session_proposal)
-    amount_ttc = amount_ht * 1.2
+    amount_ttc = amount_ht * 1.2 if include_tva else amount_ht
 
     product_ids = [row['product_id'] for row in proposal_rows if row['product_id'] is not None]
     products_by_id = {
@@ -230,6 +232,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
                 client=selected_client,
                 commercial=request.user,
                 state=state,
+                validity_period=30,
             )
 
         proposal_product_objects = []
@@ -248,7 +251,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
 
         ProposalProduct.objects.bulk_create(proposal_product_objects)
 
-    for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition', 'proposal_draft_id'):
+    for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition', 'proposal_include_tva', 'proposal_draft_id'):
         if session_key in request.session:
             del request.session[session_key]
     request.session.modified = True
@@ -271,6 +274,7 @@ def _build_session_from_draft(request, commercial_proposal):
     request.session['proposal'] = proposal_items
     request.session['proposal_client_id'] = commercial_proposal.client_id
     request.session['proposal_date_proposition'] = commercial_proposal.date_proposal.isoformat() if commercial_proposal.date_proposal else ''
+    request.session['proposal_include_tva'] = float(commercial_proposal.amount_ttc or 0) > float(commercial_proposal.amount_ht or 0)
     request.session['proposal_draft_id'] = commercial_proposal.id
     request.session.modified = True
 
@@ -621,6 +625,7 @@ def save_proposal_options_api(request):
 
     client_id_raw = payload.get('client_id')
     date_proposition_raw = payload.get('date_proposition')
+    include_tax_raw = payload.get('include_tax')
 
     client_id = None
     if client_id_raw not in (None, '', 0):
@@ -643,8 +648,15 @@ def save_proposal_options_api(request):
         if len(date_proposition) != 10 or date_proposition[4] != '-' or date_proposition[7] != '-':
             return JsonResponse({'success': False, 'message': 'Format de date invalide (YYYY-MM-DD attendu).'}, status=400)
 
+    include_tax = True
+    if isinstance(include_tax_raw, bool):
+        include_tax = include_tax_raw
+    elif include_tax_raw is not None:
+        include_tax = str(include_tax_raw).strip().lower() in ('1', 'true', 'yes', 'on')
+
     request.session['proposal_client_id'] = client_id
     request.session['proposal_date_proposition'] = date_proposition
+    request.session['proposal_include_tva'] = include_tax
     request.session.modified = True
 
     return JsonResponse({
@@ -652,6 +664,7 @@ def save_proposal_options_api(request):
         'message': 'Options de la proposition enregistrées avec succès.',
         'proposal_client_id': client_id,
         'proposal_date_proposition': date_proposition,
+        'proposal_include_tva': include_tax,
     })
     
 @require_GET
@@ -665,6 +678,7 @@ def new_proposition_page(request):
     except (TypeError, ValueError):
         selected_client_id = None
     proposal_date_proposition = request.session.get('proposal_date_proposition', '')
+    proposal_include_tva = bool(request.session.get('proposal_include_tva', True))
     proposal_total = 0.0
     summary_by_category = {}
 
@@ -754,6 +768,7 @@ def new_proposition_page(request):
             "proposal": list_proposal,
             "selected_client_id": selected_client_id,
             "proposal_date_proposition": proposal_date_proposition,
+            "proposal_include_tva": proposal_include_tva,
             "proposal_total": proposal_total,
             "summary_categories": summary_categories,
             "proposal_table_rows": proposal_table_rows,
@@ -770,6 +785,7 @@ def appercu_proposition_page(request):
         client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
 
     proposal_date_proposition = request.session.get('proposal_date_proposition', '')
+    include_tva = bool(request.session.get('proposal_include_tva', True))
     list_proposal = request.session.get('proposal', [])
 
     proposal_total = 0.0
@@ -822,7 +838,7 @@ def appercu_proposition_page(request):
             summary_by_category[category_name]['total'] += product_total
 
     summary_categories = list(summary_by_category.values())
-    tva_amount = proposal_total * 0.2
+    tva_amount = proposal_total * 0.2 if include_tva else 0.0
     total_ttc = proposal_total + tva_amount
 
     selected_client = None
@@ -841,6 +857,8 @@ def appercu_proposition_page(request):
             'proposal_total': proposal_total,
             'tva_amount': tva_amount,
             'total_ttc': total_ttc,
+            'include_tva': include_tva,
+            'validity_period': 30,
             'selected_client': selected_client,
             'proposal_date_proposition': proposal_date_proposition,
         }
@@ -862,6 +880,11 @@ def propositions_page(request):
     else:
         all_proposals = CommercialProposal.objects.filter(commercial=request.user)
     all_clients=Client.objects.all()
+
+    for proposal in all_proposals:
+        validity_days = int(getattr(proposal, 'validity_period', 30) or 30)
+        validity_date = proposal.date_proposal + timedelta(days=validity_days)
+        proposal.validity_date = validity_date
     return render(
         request, 
         "views/propositions.html",

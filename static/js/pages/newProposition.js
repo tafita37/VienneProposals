@@ -131,6 +131,7 @@ function fillProductFields(productId) {
 document.addEventListener('DOMContentLoaded', () => {
     const clientSelect = document.getElementById('clientSelect');
     const dateProposalInput = document.getElementById('dateProposal');
+    const includeTaxInput = document.getElementById('includeTax');
     const productCategorySelect = document.getElementById('productCategorySelect');
     const productSelect = document.getElementById('productSelect');
     const addProductBtn = document.getElementById('addProductBtn');
@@ -394,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveProposalOptions = async () => {
         const clientId = clientSelect ? clientSelect.value : '';
         const dateProposition = dateProposalInput ? dateProposalInput.value : '';
+        const includeTax = includeTaxInput ? includeTaxInput.checked : true;
 
         const response = await fetch('/com/api/proposals/options/', {
             method: 'POST',
@@ -404,6 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({
                 client_id: clientId || null,
                 date_proposition: dateProposition || '',
+                include_tax: includeTax,
             }),
         });
 
