@@ -1,6 +1,7 @@
 from django.db import connection, transaction
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib import messages
 from openpyxl import load_workbook
 import io
@@ -20,10 +21,20 @@ def import_page(request):
         "views/import.html"
     )
 
+@require_GET
+@admin_required
+def categories_api(request):
+    categories = Category.objects.order_by('name').values('id', 'name')
+    return JsonResponse({'categories': list(categories)})
+
 @require_POST
 @admin_required
 def read_excel_file(request):
     excel_file = request.FILES.get('excel_file')
+    category_mode = request.POST.get('category_mode', 'existing').strip().lower()
+    product_mode = request.POST.get('product_mode', 'new').strip().lower()
+    existing_category_id = request.POST.get('existing_category_id', '').strip()
+    new_category_name = request.POST.get('new_category_name', '').strip()
     
     if not excel_file:
         messages.error(request, "Aucun fichier sélectionné")
@@ -37,22 +48,47 @@ def read_excel_file(request):
         workbook = load_workbook(filename=io.BytesIO(excel_file.read()), data_only=True)
         sheet = workbook.active
 
-        raw_category = sheet.cell(row=2, column=9).value
-        if not isinstance(raw_category, str) or not raw_category.strip():
-            messages.error(request, "La catégorie est introuvable (cellule I2 vide ou invalide).")
+        if category_mode not in {'existing', 'new'}:
+            messages.error(request, "Mode de catégorie invalide.")
             return redirect('import_page')
 
-        category_name_source = ' '.join(raw_category.strip().split()[:-1]).strip()
-        if not category_name_source:
-            category_name_source = raw_category.strip()
+        if product_mode not in {'new', 'existing'}:
+            product_mode = 'new'
 
-        category_names = [
-            part.strip()
-            for part in re.split(r'[;,/|]+', category_name_source)
-            if part.strip()
-        ]
-        if not category_names:
-            category_names = [category_name_source]
+        selected_category = None
+        if category_mode == 'existing':
+            if not existing_category_id:
+                messages.error(request, "Veuillez sélectionner une catégorie existante.")
+                return redirect('import_page')
+
+            selected_category = Category.objects.filter(id=existing_category_id).first()
+            if selected_category is None:
+                messages.error(request, "La catégorie sélectionnée est introuvable.")
+                return redirect('import_page')
+        
+        else:
+            if new_category_name:
+                category_names = [new_category_name]
+            else:
+                raw_category = sheet.cell(row=2, column=9).value
+                if not isinstance(raw_category, str) or not raw_category.strip():
+                    messages.error(request, "La catégorie est introuvable (cellule I2 vide ou invalide).")
+                    return redirect('import_page')
+
+                category_name_source = ' '.join(raw_category.strip().split()[:-1]).strip()
+                if not category_name_source:
+                    category_name_source = raw_category.strip()
+
+                category_names = [
+                    part.strip()
+                    for part in re.split(r'[;,/|]+', category_name_source)
+                    if part.strip()
+                ]
+                if not category_names:
+                    category_names = [category_name_source]
+
+        if category_mode == 'existing':
+            category_names = [selected_category.name]
 
         nb_vide = 0
         products_to_insert = []  # Liste pour stocker toutes les données
@@ -172,7 +208,10 @@ def read_excel_file(request):
         
         if products_to_insert:
             with transaction.atomic():
-                categories = [Category.objects.get_or_create(name=category_name)[0] for category_name in category_names]
+                if category_mode == 'existing':
+                    categories = [selected_category]
+                else:
+                    categories = [Category.objects.get_or_create(name=category_name)[0] for category_name in category_names]
 
                 unit_names = sorted({product['unite'] for product in products_to_insert if product['unite']})
                 units = {
@@ -193,10 +232,26 @@ def read_excel_file(request):
 
                 product_objects = []
                 product_rows = []
+                skipped_missing_existing_products = 0
                 for product_data in products_to_insert:
                     existing_product = existing_products.get(product_data['designation'])
                     if existing_product is not None:
+                        if product_mode == 'existing':
+                            existing_product.purchase_unit_price = product_data['prixAchat']
+                            existing_product.sale_unit_price = product_data['prixVente']
+                            existing_product.coefficient = product_data['coefficient']
+                            unit_obj = units.get(product_data['unite'])
+                            if unit_obj is not None and existing_product.unit_id != unit_obj.id:
+                                existing_product.unit = unit_obj
+                            existing_product.save(update_fields=['purchase_unit_price', 'sale_unit_price', 'coefficient', 'unit'])
+                            product_rows.append(existing_product)
+                            continue
+
                         product_rows.append(existing_product)
+                        continue
+
+                    if product_mode == 'existing':
+                        skipped_missing_existing_products += 1
                         continue
 
                     unit_obj = units.get(product_data['unite'])
@@ -219,10 +274,14 @@ def read_excel_file(request):
                 }
                 product_category_objects = []
                 linked_existing_products = 0
+                updated_existing_products = 0
                 for product_row in products_to_insert:
                     product = existing_products.get(product_row['designation']) or new_products_by_designation.get(product_row['designation'])
                     if product is None:
                         continue
+
+                    if product_mode == 'existing' and product_row['designation'] in existing_products:
+                        updated_existing_products += 1
 
                     for category in categories:
                         product_category_objects.append(
@@ -237,20 +296,39 @@ def read_excel_file(request):
 
                 count = len(created_products)
                 category_label = ', '.join(category.name for category in categories)
-                if count and linked_existing_products:
-                    messages.success(
-                        request,
-                        f"Import réussi - {count} produit(s) créés et {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
-                    )
-                elif count:
-                    messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category_label}")
-                elif linked_existing_products:
-                    messages.success(
-                        request,
-                        f"Import réussi - {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
-                    )
+                if product_mode == 'existing':
+                    if count and updated_existing_products:
+                        messages.success(
+                            request,
+                            f"Import réussi - {count} produit(s) créés et {updated_existing_products} produit(s) existant(s) mis à jour et reliés aux catégories {category_label}"
+                        )
+                    elif updated_existing_products:
+                        messages.success(
+                            request,
+                            f"Import réussi - {updated_existing_products} produit(s) existant(s) mis à jour et reliés aux catégories {category_label}"
+                        )
+                    elif skipped_missing_existing_products:
+                        messages.warning(
+                            request,
+                            f"Aucun produit correspondant trouvé pour {skipped_missing_existing_products} désignation(s) du fichier."
+                        )
+                    else:
+                        messages.warning(request, "Aucun produit existant n'a pu être mis à jour.")
                 else:
-                    messages.warning(request, "Aucun produit nouveau ni liaison de catégorie n'a pu être créé.")
+                    if count and linked_existing_products:
+                        messages.success(
+                            request,
+                            f"Import réussi - {count} produit(s) créés et {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
+                        )
+                    elif count:
+                        messages.success(request, f"Import réussi - {count} produits ajoutés dans la catégorie {category_label}")
+                    elif linked_existing_products:
+                        messages.success(
+                            request,
+                            f"Import réussi - {linked_existing_products} produit(s) existant(s) relié(s) aux catégories {category_label}"
+                        )
+                    else:
+                        messages.warning(request, "Aucun produit nouveau ni liaison de catégorie n'a pu être créé.")
         else:
             messages.warning(request, "Aucune donnée valide à importer")
             return redirect('import_page')

@@ -38,24 +38,86 @@ Importez votre catalogue de produits.{% endblock %}
         </div>
         {% endif %}
 
-        <div id="uploadArea"
-            style="padding: 2rem; text-align: center; background: #f9f7f4; border-radius: 8px; border: 2px dashed var(--border); cursor: pointer; transition: all 0.3s;"
-            onmouseover="this.style.background='rgba(13, 115, 119, 0.05)'" onmouseout="this.style.background='#f9f7f4'"
-            onclick="document.getElementById('fileInput').click()">
-            <div id="loadingSpinner"
-                style="display: none; font-size: 2.5rem; margin-bottom: 1rem; animation: spin 1s linear infinite;">
-                ⏳</div>
-            <div id="uploadIcon" style="font-size: 2.5rem; margin-bottom: 1rem;">📁</div>
-            <p id="uploadText" style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 500;">
-                Glissez-déposez votre fichier Excel ici</p>
-            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">ou</p>
-            <button type="button" class="btn btn-primary" style="display: inline-block;">Sélectionner un
-                fichier</button>
-        </div>
-
         <form id="importForm" method="post" action="{% url 'read_excel_file' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <div id="importMessage" class="form-message" aria-live="polite"></div>
+
+            <div class="import-step-card">
+                <h3 class="import-step-title">1. Choisissez la catégorie cible</h3>
+                <p class="import-step-subtitle">
+                    Indiquez d'abord si vous importez pour une nouvelle catégorie ou une catégorie déjà existante.
+                </p>
+
+                <div class="category-mode-group" role="radiogroup" aria-label="Type de catégorie">
+                    <label class="category-mode-option">
+                        <input type="radio" name="category_mode" value="existing" checked>
+                        <span>Catégorie existante</span>
+                    </label>
+                    <label class="category-mode-option">
+                        <input type="radio" name="category_mode" value="new">
+                        <span>Nouvelle catégorie</span>
+                    </label>
+                </div>
+
+                <div id="existingCategoryGroup" class="form-group">
+                    <label for="existingCategorySelect">Sélectionner une catégorie existante</label>
+                    <div class="category-select-row">
+                        <select
+                            id="existingCategorySelect"
+                            name="existing_category_id"
+                            required
+                        >
+                            <option value="">Chargement des catégories...</option>
+                        </select>
+                        <!-- <button type="button" id="reloadCategoriesBtn" class="btn btn-secondary">Rafraîchir</button> -->
+                    </div>
+                </div>
+
+                <div id="newCategoryGroup" class="form-group" style="display: none;">
+                    <label for="newCategoryName">Nom de la nouvelle catégorie</label>
+                    <input
+                        type="text"
+                        id="newCategoryName"
+                        name="new_category_name"
+                        placeholder="Ex. Portes intérieures"
+                        maxlength="120"
+                    >
+                </div>
+            </div>
+
+            <div id="productModeStep" class="import-step-card">
+                <h3 class="import-step-title">2. Type de produits à importer</h3>
+                <p class="import-step-subtitle">
+                    Indiquez s'il s'agit de nouveaux produits ou de produits existants.
+                </p>
+
+                <div class="category-mode-group" role="radiogroup" aria-label="Type de produits">
+                    <label class="category-mode-option">
+                        <input type="radio" name="product_mode" value="new" checked>
+                        <span>Nouveaux produits</span>
+                    </label>
+                    <label class="category-mode-option">
+                        <input type="radio" name="product_mode" value="existing">
+                        <span>Produits existants</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="uploadArea"
+                style="padding: 2rem; text-align: center; background: #f9f7f4; border-radius: 8px; border: 2px dashed var(--border); cursor: pointer; transition: all 0.3s;"
+                onmouseover="this.style.background='rgba(13, 115, 119, 0.05)'" onmouseout="this.style.background='#f9f7f4'"
+                onclick="document.getElementById('fileInput').click()">
+                <div id="loadingSpinner"
+                    style="display: none; font-size: 2.5rem; margin-bottom: 1rem; animation: spin 1s linear infinite;">
+                    ⏳</div>
+                <div id="uploadIcon" style="font-size: 2.5rem; margin-bottom: 1rem;">📁</div>
+                <p id="uploadText" style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 500;">
+                    3. Importez ensuite votre fichier Excel</p>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">ou</p>
+                <button type="button" class="btn btn-primary" style="display: inline-block;">Sélectionner un
+                    fichier</button>
+            </div>
+
             <input type="file" id="fileInput" name="excel_file" accept=".xlsx,.xlsm" style="display: none;">
         </form>
 
