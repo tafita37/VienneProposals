@@ -1,7 +1,7 @@
 from django.urls import include, path
 
 from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_products_api, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_draft_proposition_page, save_proposal_options_api, save_selected_products_api, validate_proposition_page
-from commercial.controllers.StatController import get_initial_dashboard_data, get_profit_by_month, get_stat_by_commercial
+from commercial.controllers.StatController import get_initial_dashboard_data, get_initial_user_dashboard_data, get_profit_by_month, get_stat_by_commercial, get_user_profit_by_month, user_dashboard_page
 
 urlpatterns = [
     path('catalog_page/', catalogue_page, name='catalogue_page'),
@@ -9,6 +9,9 @@ urlpatterns = [
     path('api/loadInitialDataDashboard/', get_initial_dashboard_data, name='load_initial_dashboard_data_api'),
     path('api/statByCommercial/', get_stat_by_commercial, name='stat_by_commercial_api'),
     path('api/profitByMonth/', get_profit_by_month, name='profit_by_month_api'),
+    path('api/loadInitialUserDashboardData/', get_initial_user_dashboard_data, name='load_initial_user_dashboard_data_api'),
+    path('api/userProfitByMonth/', get_user_profit_by_month, name='user_profit_by_month_api'),
+    path('dashboard_user_page/', user_dashboard_page, name='dashboard_user_page'),
     path('api/clients/<int:client_id>/', get_client_by_id_api, name='get_client_by_id_api'),
     path('api/proposals/selected-products/', save_selected_products_api, name='save_selected_products_api'),
     path('api/proposals/remove-product/', remove_selected_product_api, name='remove_selected_product_api'),

@@ -1,0 +1,62 @@
+{% extends 'baseUser.html' %}
+
+{% load static %}
+
+{% block title %}Dashboard Commercial - Vienne Agencement{% endblock %}
+
+{% block header_title %}Dashboard{% endblock %}
+
+{% block header_subtitle %}Vue synthese de vos performances commerciales{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard_user.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/pages/dashboard_user.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Vos indicateurs</h2>
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-number" id="createdCount">0</div>
+            <div class="stat-label">Propositions creees</div>
+        </div>
+        <div class="stat-box success">
+            <div class="stat-number" id="validatedCount">0</div>
+            <div class="stat-label">Propositions validees</div>
+        </div>
+        <div class="stat-box warning">
+            <div class="stat-number" id="pendingCount">0</div>
+            <div class="stat-label">En attente</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="dashboard-section-header">
+        <h2>Marge brute generee pour l'entreprise</h2>
+        <div class="dashboard-filter-wrap">
+            <label for="userProfitYearInput">Annee :</label>
+            <input id="userProfitYearInput" class="dashboard-year-input" type="number" min="2024" max="2026" step="1" aria-label="Saisir une annee pour les marges brutes">
+        </div>
+    </div>
+    <span class="dashboard-section-meta" id="userProfitMeta"></span>
+    <div class="profit-chart" id="userProfitChart">
+        <canvas id="userProfitChartCanvas" height="240" aria-label="Graphique des marges brutes mensuelles" role="img"></canvas>
+    </div>
+    <div class="profit-summary">
+        <div>
+            <span class="summary-label">Marge brute cumulee annuelle</span>
+            <strong class="summary-value" id="userYearlyProfit">0 Ar</strong>
+        </div>
+        <div>
+            <span class="summary-label">Mois le plus performant</span>
+            <strong class="summary-value" id="userBestMonth">-</strong>
+        </div>
+    </div>
+</div>
+{% endblock %}

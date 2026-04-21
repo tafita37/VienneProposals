@@ -7,6 +7,7 @@ from django.utils import timezone
 # from django.contrib.auth.decorators import login_required
 
 from authentification.decoratos import admin_required
+from authentification.decoratos import user_required
 from authentification.metier.User import User
 from commercial.metier.CommercialProposal import CommercialProposal
 
@@ -140,6 +141,62 @@ def _build_profit_by_month(year):
         for month_number in range(1, 13)
     ]
 
+
+def _build_profit_by_month_for_commercial(year, commercial_user):
+    month_labels = [
+        "Janvier",
+        "Février",
+        "Mars",
+        "Avril",
+        "Mai",
+        "Juin",
+        "Juillet",
+        "Août",
+        "Septembre",
+        "Octobre",
+        "Novembre",
+        "Décembre",
+    ]
+    profit_by_month = {month_number: 0.0 for month_number in range(1, 13)}
+
+    proposals = (
+        CommercialProposal.objects.filter(date_proposal__year=year, commercial=commercial_user)
+        .prefetch_related("proposal_products")
+    )
+
+    for proposal in proposals:
+        month_number = proposal.date_proposal.month
+        monthly_profit = 0.0
+
+        for proposal_product in proposal.proposal_products.all():
+            quantity = max(0.0, float(proposal_product.quantity or 0))
+            sale_unit_price = max(0.0, float(proposal_product.sale_unit_price or 0))
+            purchase_unit_price = max(0.0, float(proposal_product.purchase_unit_price or 0))
+            monthly_profit += (sale_unit_price * quantity) - (purchase_unit_price * quantity)
+
+        profit_by_month[month_number] += monthly_profit
+
+    return [
+        {
+            "month": month_labels[month_number - 1],
+            "value": round(profit_by_month[month_number], 2),
+        }
+        for month_number in range(1, 13)
+    ]
+
+
+def _build_user_dashboard_counts(commercial_user):
+    proposals = CommercialProposal.objects.filter(commercial=commercial_user)
+    total_created = proposals.count()
+    total_validated = proposals.filter(state=1).count()
+    total_pending = proposals.filter(state=0).count()
+
+    return {
+        "created": total_created,
+        "validated": total_validated,
+        "pending": total_pending,
+    }
+
 @require_GET
 @admin_required
 def dashboard_page(request):
@@ -187,5 +244,37 @@ def get_profit_by_month(request):
     data = {
         "year": requested_year,
         "profitByMonth": _build_profit_by_month(requested_year),
+    }
+    return JsonResponse(data)
+
+
+@require_GET
+@user_required
+def user_dashboard_page(request):
+    return render(request, "views/dashboard_user.html")
+
+
+@require_GET
+@user_required
+def get_initial_user_dashboard_data(request):
+    current_year = timezone.localdate().year
+    data = {
+        "year": current_year,
+        "counts": _build_user_dashboard_counts(request.user),
+        "profitByMonth": _build_profit_by_month_for_commercial(current_year, request.user),
+    }
+    return JsonResponse(data)
+
+
+@require_GET
+@user_required
+def get_user_profit_by_month(request):
+    requested_year = _parse_requested_year(request)
+    if requested_year is None:
+        return JsonResponse({"error": "Parametre year invalide."}, status=400)
+
+    data = {
+        "year": requested_year,
+        "profitByMonth": _build_profit_by_month_for_commercial(requested_year, request.user),
     }
     return JsonResponse(data)

@@ -53,12 +53,16 @@ def _read_password_token(token, expected_account_type, expected_purpose):
 def login_user_page(request):
     if request.user.is_authenticated and isinstance(request.user, User):
         return redirect('catalogue_page')  # Redirige si déjà connecté
+    if request.user.is_authenticated and isinstance(request.user, AdminUser):
+        return redirect('dashboard_page')
     return render(request, "views/login_user.html")
 
 @require_GET
 def login_admin_page(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and isinstance(request.user, AdminUser):
         return redirect('dashboard_page')  # Redirige si déjà connecté
+    if request.user.is_authenticated and isinstance(request.user, User):
+        return redirect('catalogue_page')
     return render(request, "views/login_admin.html")
 
 @require_POST
@@ -66,15 +70,32 @@ def login_user(request):
     user = authenticate(
         request,
         username = request.POST.get('username'),
-        password = request.POST.get('password')
+        password = request.POST.get('password'),
+        backend='django.contrib.auth.backends.ModelBackend'
     )
-    if user:
+    if user and isinstance(user, User):
         login(request, user)
         return redirect('catalogue_page')
     else :
         messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
         return redirect('login_user_page')
+    
 
+    
+@require_POST
+def login_admin(request):
+    backend = AdminUserBackend()
+    user = backend.authenticate(
+        request,
+        username = request.POST.get('username'),
+        password = request.POST.get('password')
+    )
+    if user:
+        login(request, user, backend='authentification.backends.AdminUserBackend')
+        return redirect('dashboard_page')
+    else :
+        messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
+        return redirect('login_admin_page')
 
 @require_GET
 def forgot_password_user_page(request):
@@ -307,22 +328,6 @@ def define_password(request):
 
     messages.success(request, "Mot de passe défini avec succès. Vous pouvez vous connecter")
     return redirect('login_user_page')
-    
-@require_POST
-def login_admin(request):
-    backend = AdminUserBackend()
-    user = backend.authenticate(
-        request,
-        username = request.POST.get('username'),
-        password = request.POST.get('password')
-    )
-    if user:
-        login(request, user, backend='authentification.backends.AdminUserBackend')
-        return redirect('dashboard_page')
-    else :
-        messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
-        return redirect('login_admin_page')
-
 
 @require_GET
 def forgot_password_admin_page(request):
