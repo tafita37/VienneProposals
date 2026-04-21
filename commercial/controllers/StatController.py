@@ -25,6 +25,20 @@ def _parse_requested_year(request):
 
 
 def _build_stat_by_commercial(year):
+    month_labels = [
+        "Janvier",
+        "Février",
+        "Mars",
+        "Avril",
+        "Mai",
+        "Juin",
+        "Juillet",
+        "Août",
+        "Septembre",
+        "Octobre",
+        "Novembre",
+        "Décembre",
+    ]
     commercial_users = User.objects.all()
     proposal_counts = {
         row["commercial_id"]: row["total"]
@@ -35,13 +49,49 @@ def _build_stat_by_commercial(year):
         )
     }
 
+    proposal_margins = {commercial.id: {month: 0.0 for month in range(1, 13)} for commercial in commercial_users}
+
+    proposals = (
+        CommercialProposal.objects.filter(date_proposal__year=year)
+        .prefetch_related("proposal_products")
+    )
+
+    for proposal in proposals:
+        commercial_id = proposal.commercial_id
+        month_number = proposal.date_proposal.month
+        margin = 0.0
+
+        for proposal_product in proposal.proposal_products.all():
+            quantity = max(0.0, float(proposal_product.quantity or 0))
+            sale_unit_price = max(0.0, float(proposal_product.sale_unit_price or 0))
+            purchase_unit_price = max(0.0, float(proposal_product.purchase_unit_price or 0))
+            margin += (sale_unit_price * quantity) - (purchase_unit_price * quantity)
+
+        if commercial_id in proposal_margins:
+            proposal_margins[commercial_id][month_number] += margin
+
     stat_by_commercial = []
     for commercial in commercial_users:
+        monthly_profit = [
+            {
+                "month": month_labels[month_number - 1],
+                "value": round(proposal_margins.get(commercial.id, {}).get(month_number, 0.0), 2),
+            }
+            for month_number in range(1, 13)
+        ]
+
+        yearly_profit = round(
+            sum(item["value"] for item in monthly_profit),
+            2,
+        )
+
         stat_by_commercial.append(
             {
                 "id": commercial.id,
                 "name": f"{commercial.first_name} {commercial.last_name}".strip(),
                 "proposals": proposal_counts.get(commercial.id, 0),
+                "yearlyProfit": yearly_profit,
+                "monthlyProfit": monthly_profit,
             }
         )
 
