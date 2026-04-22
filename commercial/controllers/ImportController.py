@@ -197,6 +197,55 @@ def read_excel_file(request):
             if product['excel_row'] not in invalid_rows
         ]
 
+        if product_mode == 'new' and products_to_insert:
+            if category_mode == 'existing':
+                categories_for_validation = [selected_category]
+            else:
+                categories_for_validation = list(
+                    Category.objects.filter(name__in=category_names).only('id', 'name')
+                )
+
+            existing_products_for_validation = {
+                product.designation: product
+                for product in Product.objects.filter(
+                    designation__in=[product['designation'] for product in products_to_insert]
+                ).only('id', 'designation')
+            }
+
+            if categories_for_validation and existing_products_for_validation:
+                category_names_by_id = {
+                    category.id: category.name
+                    for category in categories_for_validation
+                }
+                existing_links = set(
+                    ProductCategory.objects.filter(
+                        product_id__in=[product.id for product in existing_products_for_validation.values()],
+                        category_id__in=list(category_names_by_id.keys())
+                    ).values_list('product_id', 'category_id')
+                )
+
+                for product_data in products_to_insert:
+                    existing_product = existing_products_for_validation.get(product_data['designation'])
+                    if existing_product is None:
+                        continue
+
+                    duplicate_categories = sorted({
+                        category_names_by_id[category_id]
+                        for product_id, category_id in existing_links
+                        if product_id == existing_product.id
+                    })
+
+                    if duplicate_categories:
+                        row_errors.append(
+                            f"Ligne Excel {product_data['excel_row']}: la désignation '{product_data['designation']}' existe déjà pour la/les catégorie(s) {', '.join(duplicate_categories)}."
+                        )
+                        invalid_rows.add(product_data['excel_row'])
+
+                products_to_insert = [
+                    product for product in products_to_insert
+                    if product['excel_row'] not in invalid_rows
+                ]
+
         if row_errors:
             messages.error(
                 request,
@@ -231,7 +280,6 @@ def read_excel_file(request):
                 }
 
                 product_objects = []
-                product_rows = []
                 skipped_missing_existing_products = 0
                 for product_data in products_to_insert:
                     existing_product = existing_products.get(product_data['designation'])
@@ -244,10 +292,7 @@ def read_excel_file(request):
                             if unit_obj is not None and existing_product.unit_id != unit_obj.id:
                                 existing_product.unit = unit_obj
                             existing_product.save(update_fields=['purchase_unit_price', 'sale_unit_price', 'coefficient', 'unit'])
-                            product_rows.append(existing_product)
-                            continue
-
-                        product_rows.append(existing_product)
+                            
                         continue
 
                     if product_mode == 'existing':
@@ -265,7 +310,6 @@ def read_excel_file(request):
                         coefficient=product_data['coefficient'],
                         unit=unit_obj,
                     ))
-                    product_rows.append(product_data)
 
                 created_products = Product.objects.bulk_create(product_objects)
                 new_products_by_designation = {
@@ -283,6 +327,9 @@ def read_excel_file(request):
                     if product_mode == 'existing' and product_row['designation'] in existing_products:
                         updated_existing_products += 1
 
+                    if product_mode != 'new':
+                        continue
+
                     for category in categories:
                         product_category_objects.append(
                             ProductCategory(product=product, category=category)
@@ -291,7 +338,7 @@ def read_excel_file(request):
                     if product_row['designation'] in existing_products:
                         linked_existing_products += 1
 
-                if product_category_objects and product_mode == 'new':
+                if product_category_objects:
                     ProductCategory.objects.bulk_create(product_category_objects, ignore_conflicts=True)
 
                 count = len(created_products)
@@ -305,7 +352,7 @@ def read_excel_file(request):
                     elif updated_existing_products:
                         messages.success(
                             request,
-                            f"Import réussi - {updated_existing_products} produit(s) existant(s) mis à jour et reliés aux catégories {category_label}"
+                            f"Import réussi - {updated_existing_products} produit(s) existant(s) mis à jour."
                         )
                     elif skipped_missing_existing_products:
                         messages.warning(
