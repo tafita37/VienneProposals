@@ -291,7 +291,7 @@ def read_excel_file(request):
                     if product_row['designation'] in existing_products:
                         linked_existing_products += 1
 
-                if product_category_objects:
+                if product_category_objects and product_mode == 'new':
                     ProductCategory.objects.bulk_create(product_category_objects, ignore_conflicts=True)
 
                 count = len(created_products)

@@ -150,12 +150,6 @@ function validateCategoryFields() {
         return true;
     }
 
-    const categoryName = newCategoryNameInput ? newCategoryNameInput.value.trim() : '';
-    if (!categoryName) {
-        showMessage('error', 'Saisissez le nom de la nouvelle catégorie avant d\'importer le fichier.');
-        return false;
-    }
-
     return true;
 }
 
