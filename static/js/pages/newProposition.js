@@ -131,6 +131,7 @@ function fillProductFields(productId) {
 document.addEventListener('DOMContentLoaded', () => {
     const clientSelect = document.getElementById('clientSelect');
     const dateProposalInput = document.getElementById('dateProposal');
+    const expirationDateInput = document.getElementById('expirationDate');
     const includeTaxInput = document.getElementById('includeTax');
     const productCategorySelect = document.getElementById('productCategorySelect');
     const productSelect = document.getElementById('productSelect');
@@ -150,6 +151,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return '';
+    };
+
+    const toIsoDate = (dateValue) => {
+        const year = dateValue.getFullYear();
+        const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+        const day = String(dateValue.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const addDaysToIsoDate = (isoDate, dayCount) => {
+        if (typeof isoDate !== 'string' || !isoDate) {
+            return '';
+        }
+
+        const parsedDate = new Date(`${isoDate}T00:00:00`);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return '';
+        }
+
+        parsedDate.setDate(parsedDate.getDate() + dayCount);
+        return toIsoDate(parsedDate);
     };
 
     const createAddedProductRowHtml = (item) => {
@@ -395,6 +417,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveProposalOptions = async () => {
         const clientId = clientSelect ? clientSelect.value : '';
         const dateProposition = dateProposalInput ? dateProposalInput.value : '';
+        const expirationDate = expirationDateInput ? expirationDateInput.value : '';
+        
         const includeTax = includeTaxInput ? includeTaxInput.checked : true;
 
         const response = await fetch('/com/api/proposals/options/', {
@@ -406,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({
                 client_id: clientId || null,
                 date_proposition: dateProposition || '',
+                expiration_date: expirationDate || '',
                 include_tax: includeTax,
             }),
         });
@@ -440,6 +465,44 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             clearClientReadonlyFields();
         }
+    }
+
+    if (dateProposalInput && expirationDateInput) {
+        if (!dateProposalInput.value) {
+            dateProposalInput.value = toIsoDate(new Date());
+        }
+
+        const getDefaultExpirationDate = () => addDaysToIsoDate(dateProposalInput.value, 30);
+
+        const syncExpirationDateWithProposalDate = () => {
+            if (expirationDateInput.dataset.userModified === '1') {
+                return;
+            }
+
+            expirationDateInput.value = getDefaultExpirationDate();
+        };
+
+        const updateUserModifiedFlag = () => {
+            const defaultExpirationDate = getDefaultExpirationDate();
+            if (!expirationDateInput.value || expirationDateInput.value === defaultExpirationDate) {
+                expirationDateInput.dataset.userModified = '0';
+                return;
+            }
+
+            expirationDateInput.dataset.userModified = '1';
+        };
+
+        if (!expirationDateInput.value) {
+            expirationDateInput.dataset.userModified = '0';
+            syncExpirationDateWithProposalDate();
+        } else {
+            updateUserModifiedFlag();
+        }
+
+        dateProposalInput.addEventListener('input', syncExpirationDateWithProposalDate);
+        dateProposalInput.addEventListener('change', syncExpirationDateWithProposalDate);
+        expirationDateInput.addEventListener('input', updateUserModifiedFlag);
+        expirationDateInput.addEventListener('change', updateUserModifiedFlag);
     }
 
     // Category selection
@@ -590,14 +653,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 event.preventDefault();
 
                 const href = linkElement.getAttribute('href') || '/com/preview_proposition_page/';
+                const previewUrl = new URL(href, window.location.origin);
+                const clientId = clientSelect ? String(clientSelect.value || '').trim() : '';
+                const dateProposition = dateProposalInput ? String(dateProposalInput.value || '').trim() : '';
+                const expirationDate = expirationDateInput ? String(expirationDateInput.value || '').trim() : '';
+                const includeTax = includeTaxInput ? includeTaxInput.checked : true;
+
+                if (clientId) {
+                    previewUrl.searchParams.set('client_id', clientId);
+                }
+                if (dateProposition) {
+                    previewUrl.searchParams.set('date_proposition', dateProposition);
+                }
+                if (expirationDate) {
+                    previewUrl.searchParams.set('expiration_date', expirationDate);
+                }
+                previewUrl.searchParams.set('include_tva', includeTax ? '1' : '0');
+
                 linkElement.style.pointerEvents = 'none';
 
                 try {
                     await saveProposalOptions();
-                    window.location.href = href;
+                    window.location.href = previewUrl.toString();
                 } catch (error) {
                     console.error('Erreur lors de l\'enregistrement des options de proposition :', error);
-                    alert('Impossible d\'enregistrer le client et la date avant l\'aperçu.');
+                    alert('Impossible d\'enregistrer le client, la date et la date d\'expiration avant l\'aperçu.');
                 } finally {
                     linkElement.style.pointerEvents = '';
                 }

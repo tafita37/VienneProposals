@@ -10,7 +10,7 @@ class CommercialProposal(models.Model):
 	client = models.ForeignKey(Client, on_delete=models.PROTECT, db_column='client_id')
 	commercial=models.ForeignKey(User, on_delete=models.PROTECT, db_column='commercial_id')
 	state=models.IntegerField(default=1)  # 0: brouillon, 1: validé
-	validity_period = models.IntegerField(default=30)  # Durée de validité en jours
+	expiration_date = models.DateField(null=True, blank=True)
 
 	@property
 	def proposal_product_list(self):
