@@ -29,13 +29,18 @@
                     style="flex: 1 1 240px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
                     <option value="">Sélectionner un client</option>
                     {% for client in clients %}
-                    <option value="{{ client.id }}" {% if selected_client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+                    <option value="{{ client.id }}" {% if selected_client_id == client.id %}selected{% endif %}>{{ client.name }} - {% if client.is_company %}BtoB{% else %}BtoC{% endif %}</option>
                     {% endfor %}
                 </select>
-                <a href="create-client.html" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">+
+                <a href="{% url 'new_client_user_page' %}" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">+
                     Client</a>
-                <a href="clients.html" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">Liste</a>
+                <button type="button" id="editClientBtn" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">Modifier</button>
+                <button type="button" id="saveClientBtn" class="btn btn-primary" style="display: none; flex: 0 0 auto; padding: 0.6rem 1rem;">Valider</button>
             </div>
+        </div>
+        <div class="form-group">
+            <label>Type de client</label>
+            <input type="text" id="clientType" placeholder="Type de client" readonly>
         </div>
         <div class="form-group">
             <label>Adresse</label>
@@ -48,6 +53,55 @@
         <div class="form-group">
             <label>Email</label>
             <input type="email" id="clientEmail" placeholder="Email" readonly>
+        </div>
+        <div class="form-group">
+            <label>Site web</label>
+            <input type="text" id="clientWebsite" placeholder="Site web" readonly>
+        </div>
+
+        <div id="individualInfoSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <h4 style="margin-bottom: 0.75rem; color: var(--text-dark);">Informations BtoC</h4>
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="individualFirstName" placeholder="Prénom" readonly>
+            </div>
+            <div class="form-group">
+                <label>Nom</label>
+                <input type="text" id="individualLastName" placeholder="Nom" readonly>
+            </div>
+            <div class="form-group">
+                <label>Date de naissance</label>
+                <input type="date" id="individualBirthDate" placeholder="Date de naissance" readonly>
+            </div>
+            <div class="form-group">
+                <label>Numéro de carte d'identité</label>
+                <input type="text" id="individualIdCardNumber" placeholder="Numéro de carte d'identité" readonly>
+            </div>
+        </div>
+
+        <div id="companyInfoSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <h4 style="margin-bottom: 0.75rem; color: var(--text-dark);">Informations BtoB</h4>
+            <div class="form-group">
+                <label>Raison sociale</label>
+                <input type="text" id="companyName" placeholder="Raison sociale" readonly>
+            </div>
+            <div class="form-group">
+                <label>Type d'entreprise</label>
+                <input type="text" id="companyType" placeholder="Type d'entreprise" readonly>
+                <input type="hidden" id="companyTypeId">
+            </div>
+            <div class="form-group">
+                <label>Numéro d'enregistrement</label>
+                <input type="text" id="companyRegistrationNumber" placeholder="Numéro d'enregistrement" readonly>
+            </div>
+            <div class="form-group">
+                <label>Numéro d'identification fiscale</label>
+                <input type="text" id="companyTaxIdentificationNumber" placeholder="Numéro d'identification fiscale" readonly>
+            </div>
+            <div class="form-group">
+                <label>Date de création</label>
+                <input type="date" id="companyCreatedAt" placeholder="Date de création" readonly>
+            </div>
         </div>
     </div>
 

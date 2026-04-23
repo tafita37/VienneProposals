@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_products_api, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_draft_proposition_page, save_proposal_options_api, save_selected_products_api, validate_proposition_page
+from commercial.controllers.CommercialController import appercu_proposition_page, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_products_api, new_client_user_page, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_client_user, save_draft_proposition_page, save_proposal_options_api, save_selected_products_api, update_client_from_proposal_api, validate_proposition_page
 from commercial.controllers.StatController import get_initial_dashboard_data, get_initial_user_dashboard_data, get_profit_by_month, get_stat_by_commercial, get_user_profit_by_month, user_dashboard_page
 
 urlpatterns = [
@@ -13,10 +13,13 @@ urlpatterns = [
     path('api/userProfitByMonth/', get_user_profit_by_month, name='user_profit_by_month_api'),
     path('dashboard_user_page/', user_dashboard_page, name='dashboard_user_page'),
     path('api/clients/<int:client_id>/', get_client_by_id_api, name='get_client_by_id_api'),
+    path('api/clients/update/', update_client_from_proposal_api, name='update_client_from_proposal_api'),
     path('api/proposals/selected-products/', save_selected_products_api, name='save_selected_products_api'),
     path('api/proposals/remove-product/', remove_selected_product_api, name='remove_selected_product_api'),
     path('api/proposals/options/', save_proposal_options_api, name='save_proposal_options_api'),
     path('new_proposition_page/', new_proposition_page, name='new_proposition_page'),
+    path('new_client_user_page/', new_client_user_page, name='new_client_user_page'),
+    path('save_client_user/', save_client_user, name='save_client_user'),
     path('preview_proposition_page/', appercu_proposition_page, name='appercu_proposition_page'),
     path('edit_draft_proposition_page/', edit_draft_proposition_page, name='edit_draft_proposition_page'),
     path('save_draft_proposition_page/', save_draft_proposition_page, name='save_draft_proposition_page'),

@@ -12,7 +12,10 @@ from django.db import transaction
 from authentification.decoratos import user_required
 from commercial.metier.Category import Category
 from commercial.metier.Client import Client
+from commercial.metier.Company import Company
+from commercial.metier.CompanyType import CompanyType
 from commercial.metier.CommercialProposal import CommercialProposal
+from commercial.metier.Individual import Individual
 from commercial.metier.Product import Product
 from commercial.metier.ProposalProduct import ProposalProduct
 
@@ -422,6 +425,13 @@ def get_client_by_id_api(request, client_id):
     if client is None:
         return JsonResponse({'success': False, 'message': 'Client introuvable.'}, status=404)
 
+    company = None
+    individual = None
+    if client.is_company:
+        company = Company.objects.select_related('company_type').filter(client_id=client.id).order_by('-id').first()
+    else:
+        individual = Individual.objects.filter(client_id=client.id).order_by('-id').first()
+
     return JsonResponse({
         'success': True,
         'client': {
@@ -431,8 +441,173 @@ def get_client_by_id_api(request, client_id):
             'phone': client.phone,
             'email': client.email,
             'website_url': client.website_url,
+            'is_company': bool(client.is_company),
+            'client_type': 'BtoB' if client.is_company else 'BtoC',
+            'company': {
+                'name': company.name if company is not None else '',
+                'company_type_id': company.company_type_id if company is not None else None,
+                'company_type': company.company_type.name if company is not None and company.company_type is not None else '',
+                'registration_number': company.registration_number if company is not None else '',
+                'tax_identification_number': company.tax_identification_number if company is not None else '',
+                'created_at': company.created_at.isoformat() if company is not None and company.created_at is not None else '',
+            },
+            'individual': {
+                'first_name': individual.first_name if individual is not None else '',
+                'last_name': individual.last_name if individual is not None else '',
+                'birth_date': individual.birth_date.isoformat() if individual is not None and individual.birth_date is not None else '',
+                'id_card_number': individual.id_card_number if individual is not None else '',
+            },
         }
     })
+
+
+@require_POST
+@user_required
+def update_client_from_proposal_api(request):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Payload JSON invalide.'}, status=400)
+
+    client_id = payload.get('client_id')
+    if client_id in (None, ''):
+        return JsonResponse({'success': False, 'message': 'client_id manquant.'}, status=400)
+
+    client = Client.objects.filter(id=client_id).first()
+    if client is None:
+        return JsonResponse({'success': False, 'message': 'Client introuvable.'}, status=404)
+
+    address = str(payload.get('address', '') or '').strip()
+    phone = str(payload.get('phone', '') or '').strip()
+    email = str(payload.get('email', '') or '').strip()
+    website_url = str(payload.get('website_url', '') or '').strip()
+
+    if not address or not phone or not email:
+        return JsonResponse({'success': False, 'message': 'Adresse, téléphone et email sont obligatoires.'}, status=400)
+
+    client.address = address
+    client.phone = phone
+    client.email = email
+    client.website_url = website_url
+
+    if client.is_company:
+        company = Company.objects.select_related('company_type').filter(client_id=client.id).first()
+        if company is None:
+            return JsonResponse({'success': False, 'message': 'Dossier société introuvable.'}, status=404)
+
+        company_name = str(payload.get('company_name', '') or '').strip()
+        company_type_id = payload.get('company_type_id')
+        registration_number = str(payload.get('registration_number', '') or '').strip()
+        tax_identification_number = str(payload.get('tax_identification_number', '') or '').strip()
+        created_at = str(payload.get('created_at', '') or '').strip()
+
+        if not company_name or not company_type_id or not registration_number or not tax_identification_number or not created_at:
+            return JsonResponse({'success': False, 'message': 'Toutes les informations société sont obligatoires.'}, status=400)
+
+        company_type = CompanyType.objects.filter(id=company_type_id).first()
+        if company_type is None:
+            return JsonResponse({'success': False, 'message': "Type d'entreprise invalide."}, status=400)
+
+        company.name = company_name
+        company.company_type = company_type
+        company.registration_number = registration_number
+        company.tax_identification_number = tax_identification_number
+        company.created_at = created_at
+        company.save()
+
+        client.name = company_name
+    else:
+        individual = Individual.objects.filter(client_id=client.id).first()
+        if individual is None:
+            return JsonResponse({'success': False, 'message': 'Dossier personne physique introuvable.'}, status=404)
+
+        first_name = str(payload.get('first_name', '') or '').strip()
+        last_name = str(payload.get('last_name', '') or '').strip()
+        birth_date = str(payload.get('birth_date', '') or '').strip()
+        id_card_number = str(payload.get('id_card_number', '') or '').strip()
+
+        if not first_name or not last_name or not birth_date or not id_card_number:
+            return JsonResponse({'success': False, 'message': 'Toutes les informations personne physique sont obligatoires.'}, status=400)
+
+        individual.first_name = first_name
+        individual.last_name = last_name
+        individual.birth_date = birth_date
+        individual.id_card_number = id_card_number
+        individual.save()
+
+        client.name = f'{first_name} {last_name}'.strip()
+
+    client.save()
+    return JsonResponse({'success': True, 'message': 'Client mis à jour avec succès.'})
+
+
+@require_GET
+@user_required
+def new_client_user_page(request):
+    all_company_types = CompanyType.objects.all()
+    return render(
+        request,
+        'views/newClientUser.html',
+        {'company_types': all_company_types}
+    )
+
+
+@require_POST
+@user_required
+def save_client_user(request):
+    address = request.POST.get('address')
+    email = request.POST.get('email')
+    website_url = request.POST.get('website_url')
+    phone = request.POST.get('phone')
+    is_company = bool(int(request.POST.get('is_company')))
+
+    first_name = request.POST.get('first_name')
+    last_name = request.POST.get('last_name')
+    birth_date = request.POST.get('birth_date')
+    id_card_number = request.POST.get('id_card_number')
+
+    company_name = request.POST.get('company_name')
+    company_type = request.POST.get('company_type')
+    registration_number = request.POST.get('registration_number')
+    tax_identification_number = request.POST.get('tax_identification_number')
+    created_at = request.POST.get('created_at')
+
+    name = company_name if is_company else f"{first_name} {last_name}"
+
+    client_data = {
+        'name': name,
+        'address': address,
+        'email': email,
+        'website_url': website_url,
+        'phone': phone
+    }
+
+    created_client_id = None
+    if is_company:
+        company = Company(
+            name=company_name,
+            registration_number=registration_number,
+            tax_identification_number=tax_identification_number,
+            created_at=created_at,
+            company_type_id=CompanyType(id=company_type)
+        )
+        company.save(client_data=client_data)
+        created_client_id = company.client_id
+    else:
+        individual = Individual(
+            first_name=first_name,
+            last_name=last_name,
+            birth_date=birth_date,
+            id_card_number=id_card_number
+        )
+        individual.save(client_data=client_data)
+        created_client_id = individual.client_id
+
+    if created_client_id:
+        request.session['proposal_client_id'] = created_client_id
+        request.session.modified = True
+
+    return redirect('new_proposition_page')
 
 
 @require_POST
