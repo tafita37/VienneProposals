@@ -1,6 +1,6 @@
 # views.py
 import json
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
@@ -164,6 +164,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
     session_proposal = request.session.get('proposal', [])
     session_client_id = request.session.get('proposal_client_id')
     session_date_proposition = request.session.get('proposal_date_proposition')
+    session_expiration_date = request.session.get('proposal_expiration_date')
     session_include_tva = request.session.get('proposal_include_tva', True)
     draft_id_raw = request.session.get('proposal_draft_id')
 
@@ -187,6 +188,14 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
     else:
         try:
             proposal_date = date.fromisoformat(str(session_date_proposition))
+        except (TypeError, ValueError):
+            return redirect('appercu_proposition_page')
+
+    if session_expiration_date in (None, ''):
+        expiration_date = proposal_date + timedelta(days=30)
+    else:
+        try:
+            expiration_date = date.fromisoformat(str(session_expiration_date))
         except (TypeError, ValueError):
             return redirect('appercu_proposition_page')
 
@@ -217,22 +226,23 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
 
         if commercial_proposal is not None:
             commercial_proposal.date_proposal = proposal_date
+            commercial_proposal.expiration_date = expiration_date
             commercial_proposal.amount_ht = amount_ht
             commercial_proposal.amount_ttc = amount_ttc
             commercial_proposal.client = selected_client
             commercial_proposal.commercial = request.user
             commercial_proposal.state = state
-            commercial_proposal.save(update_fields=['date_proposal', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state'])
+            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state'])
             commercial_proposal.proposal_products.all().delete()
         else:
             commercial_proposal = CommercialProposal.objects.create(
                 date_proposal=proposal_date,
+                expiration_date=expiration_date,
                 amount_ht=amount_ht,
                 amount_ttc=amount_ttc,
                 client=selected_client,
                 commercial=request.user,
                 state=state,
-                validity_period=30,
             )
 
         proposal_product_objects = []
@@ -251,7 +261,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
 
         ProposalProduct.objects.bulk_create(proposal_product_objects)
 
-    for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition', 'proposal_include_tva', 'proposal_draft_id'):
+    for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition', 'proposal_expiration_date', 'proposal_include_tva', 'proposal_draft_id'):
         if session_key in request.session:
             del request.session[session_key]
     request.session.modified = True
@@ -274,6 +284,12 @@ def _build_session_from_draft(request, commercial_proposal):
     request.session['proposal'] = proposal_items
     request.session['proposal_client_id'] = commercial_proposal.client_id
     request.session['proposal_date_proposition'] = commercial_proposal.date_proposal.isoformat() if commercial_proposal.date_proposal else ''
+    if commercial_proposal.expiration_date:
+        request.session['proposal_expiration_date'] = commercial_proposal.expiration_date.isoformat()
+    elif commercial_proposal.date_proposal:
+        request.session['proposal_expiration_date'] = (commercial_proposal.date_proposal + timedelta(days=30)).isoformat()
+    else:
+        request.session['proposal_expiration_date'] = ''
     request.session['proposal_include_tva'] = float(commercial_proposal.amount_ttc or 0) > float(commercial_proposal.amount_ht or 0)
     request.session['proposal_draft_id'] = commercial_proposal.id
     request.session.modified = True
@@ -625,6 +641,8 @@ def save_proposal_options_api(request):
 
     client_id_raw = payload.get('client_id')
     date_proposition_raw = payload.get('date_proposition')
+    expiration_date_raw = payload.get('expiration_date')
+    print(expiration_date_raw)
     include_tax_raw = payload.get('include_tax')
 
     client_id = None
@@ -648,6 +666,35 @@ def save_proposal_options_api(request):
         if len(date_proposition) != 10 or date_proposition[4] != '-' or date_proposition[7] != '-':
             return JsonResponse({'success': False, 'message': 'Format de date invalide (YYYY-MM-DD attendu).'}, status=400)
 
+    if expiration_date_raw in (None, ''):
+        expiration_date = ''
+    else:
+        try:
+            expiration_date = str(expiration_date_raw).strip()
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'expiration_date invalide.'}, status=400)
+
+        if len(expiration_date) != 10 or expiration_date[4] != '-' or expiration_date[7] != '-':
+            return JsonResponse({'success': False, 'message': 'Format de date d\'expiration invalide (YYYY-MM-DD attendu).'}, status=400)
+
+    base_date_for_expiration = date.today()
+    if date_proposition:
+        try:
+            base_date_for_expiration = date.fromisoformat(date_proposition)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'date_proposition invalide.'}, status=400)
+
+    if not expiration_date:
+        expiration_date = (base_date_for_expiration + timedelta(days=30)).isoformat()
+    else:
+        try:
+            parsed_expiration_date = date.fromisoformat(expiration_date)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'expiration_date invalide.'}, status=400)
+
+        if parsed_expiration_date < base_date_for_expiration:
+            return JsonResponse({'success': False, 'message': "La date d'expiration ne peut pas être antérieure à la date de proposition."}, status=400)
+
     include_tax = True
     if isinstance(include_tax_raw, bool):
         include_tax = include_tax_raw
@@ -656,6 +703,7 @@ def save_proposal_options_api(request):
 
     request.session['proposal_client_id'] = client_id
     request.session['proposal_date_proposition'] = date_proposition
+    request.session['proposal_expiration_date'] = expiration_date
     request.session['proposal_include_tva'] = include_tax
     request.session.modified = True
 
@@ -664,6 +712,7 @@ def save_proposal_options_api(request):
         'message': 'Options de la proposition enregistrées avec succès.',
         'proposal_client_id': client_id,
         'proposal_date_proposition': date_proposition,
+        'proposal_expiration_date': expiration_date,
         'proposal_include_tva': include_tax,
     })
     
@@ -677,7 +726,20 @@ def new_proposition_page(request):
         selected_client_id = int(selected_client_id_raw) if selected_client_id_raw not in (None, '') else None
     except (TypeError, ValueError):
         selected_client_id = None
-    proposal_date_proposition = request.session.get('proposal_date_proposition', '')
+    proposal_date_proposition = request.session.get('proposal_date_proposition', datetime.now().strftime('%Y-%m-%d'))
+    proposal_expiration_date = request.session.get('proposal_expiration_date', '')
+    if not proposal_expiration_date:
+        try:
+            base_date = date.fromisoformat(str(proposal_date_proposition))
+        except (TypeError, ValueError):
+            base_date = date.today()
+            proposal_date_proposition = base_date.isoformat()
+        proposal_expiration_date = (base_date + timedelta(days=30)).isoformat()
+
+    try:
+        proposal_expiration_date_display = date.fromisoformat(str(proposal_expiration_date))
+    except (TypeError, ValueError):
+        proposal_expiration_date_display = None
     proposal_include_tva = bool(request.session.get('proposal_include_tva', True))
     proposal_total = 0.0
     summary_by_category = {}
@@ -768,6 +830,7 @@ def new_proposition_page(request):
             "proposal": list_proposal,
             "selected_client_id": selected_client_id,
             "proposal_date_proposition": proposal_date_proposition,
+            "proposal_expiration_date": proposal_expiration_date,
             "proposal_include_tva": proposal_include_tva,
             "proposal_total": proposal_total,
             "summary_categories": summary_categories,
@@ -780,11 +843,57 @@ def new_proposition_page(request):
 def appercu_proposition_page(request):
     proposal_id = request.GET.get('proposal_id', '').strip()
     client_id = request.GET.get('client_id', '').strip()
+    query_date_proposition = request.GET.get('date_proposition', '').strip()
+    query_expiration_date = request.GET.get('expiration_date', '').strip()
+    query_include_tva = request.GET.get('include_tva', '').strip().lower()
+
+    if query_date_proposition:
+        try:
+            date.fromisoformat(query_date_proposition)
+            request.session['proposal_date_proposition'] = query_date_proposition
+        except (TypeError, ValueError):
+            pass
+
+    if query_expiration_date:
+        try:
+            date.fromisoformat(query_expiration_date)
+            request.session['proposal_expiration_date'] = query_expiration_date
+        except (TypeError, ValueError):
+            pass
+
+    if query_include_tva in ('1', 'true', 'yes', 'on'):
+        request.session['proposal_include_tva'] = True
+    elif query_include_tva in ('0', 'false', 'no', 'off'):
+        request.session['proposal_include_tva'] = False
+
+    if client_id:
+        try:
+            request.session['proposal_client_id'] = int(client_id)
+        except (TypeError, ValueError):
+            pass
+
     if not client_id:
         session_client_id = request.session.get('proposal_client_id')
         client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
 
     proposal_date_proposition = request.session.get('proposal_date_proposition', '')
+    proposal_expiration_date = request.session.get('proposal_expiration_date', '')
+    if not proposal_date_proposition:
+        proposal_date_proposition = date.today().isoformat()
+
+    if not proposal_expiration_date:
+        try:
+            base_date = date.fromisoformat(str(proposal_date_proposition))
+        except (TypeError, ValueError):
+            base_date = date.today()
+            proposal_date_proposition = base_date.isoformat()
+        proposal_expiration_date = (base_date + timedelta(days=30)).isoformat()
+
+    try:
+        proposal_expiration_date_display = date.fromisoformat(str(proposal_expiration_date))
+    except (TypeError, ValueError):
+        proposal_expiration_date_display = None
+
     include_tva = bool(request.session.get('proposal_include_tva', True))
     list_proposal = request.session.get('proposal', [])
 
@@ -858,9 +967,9 @@ def appercu_proposition_page(request):
             'tva_amount': tva_amount,
             'total_ttc': total_ttc,
             'include_tva': include_tva,
-            'validity_period': 30,
             'selected_client': selected_client,
             'proposal_date_proposition': proposal_date_proposition,
+            'proposal_expiration_date': proposal_expiration_date_display,
         }
     )
 
@@ -881,10 +990,6 @@ def propositions_page(request):
         all_proposals = CommercialProposal.objects.filter(commercial=request.user)
     all_clients=Client.objects.all()
 
-    for proposal in all_proposals:
-        validity_days = int(getattr(proposal, 'validity_period', 30) or 30)
-        validity_date = proposal.date_proposal + timedelta(days=validity_days)
-        proposal.validity_date = validity_date
     return render(
         request, 
         "views/propositions.html",
