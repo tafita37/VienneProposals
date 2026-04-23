@@ -212,7 +212,6 @@
                 <tr style="background: #f9f7f4; font-weight: 600;">
                     <td colspan="5" style="padding: 0.75rem; text-align: right;">Total :</td>
                     <td id="addedProductsTotal" style="padding: 0.75rem; color: var(--accent);">{{ proposal_total|floatformat:2 }} €</td>
-                    <td></td>
                 </tr>
             </tfoot>
         </table>
@@ -254,51 +253,6 @@
 
 <div class="proposal-total">
     Total estimé : <span id="totalAmount">{{ proposal_total|floatformat:2 }} €</span>
-</div>
-
-<div class="card">
-    <h3>Tableau des produits sélectionnés</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Catégorie</th>
-                    <th>Produit</th>
-                    <th>Quantité</th>
-                    <th>Prix unitaire</th>
-                    <th>Coefficient</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="proposalSummaryTable">
-                {% if proposal_table_rows %}
-                {% for row in proposal_table_rows %}
-                    {% if row.is_category %}
-                    <tr style="background: #f9f7f4; font-weight: 600;">
-                        <td>{{ row.category_name }}</td>
-                        <td colspan="5"></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td></td>
-                        <td>{{ row.designation }}</td>
-                        <td>{{ row.quantity|floatformat:2 }}</td>
-                        <td>{{ row.sale_unit_price|floatformat:2 }} €</td>
-                        <td>{{ row.coefficient|floatformat:2 }}</td>
-                        <td class="price-calculated">{{ row.total|floatformat:2 }} €</td>
-                    </tr>
-                    {% endif %}
-                {% endfor %}
-                {% else %}
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-light);">
-                        Aucun
-                        produit sélectionné</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
 </div>
 <div class="action-buttons">
     <!-- <a href="propositions.html" class="btn btn-secondary">← Retour</a> -->

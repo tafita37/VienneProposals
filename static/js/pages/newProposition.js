@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rows = addedProductsBody.querySelectorAll('tr');
 
         rows.forEach((row) => {
-            const totalCell = row.children[5];
+            const totalCell = row.children[4];
             if (!totalCell) {
                 return;
             }
