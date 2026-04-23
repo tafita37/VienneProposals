@@ -160,7 +160,7 @@ def _build_profit_by_month_for_commercial(year, commercial_user):
     profit_by_month = {month_number: 0.0 for month_number in range(1, 13)}
 
     proposals = (
-        CommercialProposal.objects.filter(date_proposal__year=year, commercial=commercial_user)
+        CommercialProposal.objects.filter(state=1, date_proposal__year=year, commercial=commercial_user)
         .prefetch_related("proposal_products")
     )
 
