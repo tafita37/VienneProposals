@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function formatCurrency(amount) {
-    return `${new Intl.NumberFormat('fr-FR').format(amount)} Ar`;
+    return `${new Intl.NumberFormat('fr-FR').format(amount)} €`;
 }
 
 function formatCurrencyCompact(amount) {
@@ -209,5 +209,5 @@ function formatCurrencyCompact(amount) {
     if (amount >= 1000) {
         return `${Math.round(amount / 1000)} k`;
     }
-    return amount.toString().replace('.', ',');
+    return amount.toString().replace('.', ',')+ ' €';
 }
