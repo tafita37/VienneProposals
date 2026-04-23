@@ -1,19 +1,68 @@
 ﻿function clearClientReadonlyFields() {
+    const typeInput = document.getElementById('clientType');
     const addressInput = document.getElementById('clientAddress');
     const phoneInput = document.getElementById('clientPhone');
     const emailInput = document.getElementById('clientEmail');
+    const websiteInput = document.getElementById('clientWebsite');
+    const individualSection = document.getElementById('individualInfoSection');
+    const companySection = document.getElementById('companyInfoSection');
 
+    const individualFirstNameInput = document.getElementById('individualFirstName');
+    const individualLastNameInput = document.getElementById('individualLastName');
+    const individualBirthDateInput = document.getElementById('individualBirthDate');
+    const individualIdCardNumberInput = document.getElementById('individualIdCardNumber');
+
+    const companyNameInput = document.getElementById('companyName');
+    const companyTypeInput = document.getElementById('companyType');
+    const companyTypeIdInput = document.getElementById('companyTypeId');
+    const companyRegistrationNumberInput = document.getElementById('companyRegistrationNumber');
+    const companyTaxIdentificationNumberInput = document.getElementById('companyTaxIdentificationNumber');
+    const companyCreatedAtInput = document.getElementById('companyCreatedAt');
+
+    if (typeInput) typeInput.value = '';
     if (addressInput) addressInput.value = '';
     if (phoneInput) phoneInput.value = '';
     if (emailInput) emailInput.value = '';
+    if (websiteInput) websiteInput.value = '';
+
+    if (individualFirstNameInput) individualFirstNameInput.value = '';
+    if (individualLastNameInput) individualLastNameInput.value = '';
+    if (individualBirthDateInput) individualBirthDateInput.value = '';
+    if (individualIdCardNumberInput) individualIdCardNumberInput.value = '';
+
+    if (companyNameInput) companyNameInput.value = '';
+    if (companyTypeInput) companyTypeInput.value = '';
+    if (companyTypeIdInput) companyTypeIdInput.value = '';
+    if (companyRegistrationNumberInput) companyRegistrationNumberInput.value = '';
+    if (companyTaxIdentificationNumberInput) companyTaxIdentificationNumberInput.value = '';
+    if (companyCreatedAtInput) companyCreatedAtInput.value = '';
+
+    if (individualSection) individualSection.style.display = 'none';
+    if (companySection) companySection.style.display = 'none';
 }
 
 async function loadClientDetails(clientId) {
+    const typeInput = document.getElementById('clientType');
     const addressInput = document.getElementById('clientAddress');
     const phoneInput = document.getElementById('clientPhone');
     const emailInput = document.getElementById('clientEmail');
+    const websiteInput = document.getElementById('clientWebsite');
+    const individualSection = document.getElementById('individualInfoSection');
+    const companySection = document.getElementById('companyInfoSection');
 
-    if (!addressInput || !phoneInput || !emailInput) {
+    const individualFirstNameInput = document.getElementById('individualFirstName');
+    const individualLastNameInput = document.getElementById('individualLastName');
+    const individualBirthDateInput = document.getElementById('individualBirthDate');
+    const individualIdCardNumberInput = document.getElementById('individualIdCardNumber');
+
+    const companyNameInput = document.getElementById('companyName');
+    const companyTypeInput = document.getElementById('companyType');
+    const companyTypeIdInput = document.getElementById('companyTypeId');
+    const companyRegistrationNumberInput = document.getElementById('companyRegistrationNumber');
+    const companyTaxIdentificationNumberInput = document.getElementById('companyTaxIdentificationNumber');
+    const companyCreatedAtInput = document.getElementById('companyCreatedAt');
+
+    if (!typeInput || !addressInput || !phoneInput || !emailInput || !websiteInput) {
         return;
     }
 
@@ -42,9 +91,27 @@ async function loadClientDetails(clientId) {
             return;
         }
 
+        typeInput.value = client.client_type || (client.is_company ? 'BtoB' : 'BtoC') || '';
         addressInput.value = client.address || '';
         phoneInput.value = client.phone || '';
         emailInput.value = client.email || '';
+        websiteInput.value = client.website_url || '';
+
+        const isCompany = Boolean(client.is_company);
+        if (individualSection) individualSection.style.display = isCompany ? 'none' : 'block';
+        if (companySection) companySection.style.display = isCompany ? 'block' : 'none';
+
+        if (individualFirstNameInput) individualFirstNameInput.value = client?.individual?.first_name || '';
+        if (individualLastNameInput) individualLastNameInput.value = client?.individual?.last_name || '';
+        if (individualBirthDateInput) individualBirthDateInput.value = client?.individual?.birth_date || '';
+        if (individualIdCardNumberInput) individualIdCardNumberInput.value = client?.individual?.id_card_number || '';
+
+        if (companyNameInput) companyNameInput.value = client?.company?.name || '';
+        if (companyTypeInput) companyTypeInput.value = client?.company?.company_type || '';
+        if (companyTypeIdInput) companyTypeIdInput.value = String(client?.company?.company_type_id || '');
+        if (companyRegistrationNumberInput) companyRegistrationNumberInput.value = client?.company?.registration_number || '';
+        if (companyTaxIdentificationNumberInput) companyTaxIdentificationNumberInput.value = client?.company?.tax_identification_number || '';
+        if (companyCreatedAtInput) companyCreatedAtInput.value = client?.company?.created_at || '';
     } catch (error) {
         console.error(error);
         clearClientReadonlyFields();
@@ -130,6 +197,8 @@ function fillProductFields(productId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const clientSelect = document.getElementById('clientSelect');
+    const editClientBtn = document.getElementById('editClientBtn');
+    const saveClientBtn = document.getElementById('saveClientBtn');
     const dateProposalInput = document.getElementById('dateProposal');
     const expirationDateInput = document.getElementById('expirationDate');
     const includeTaxInput = document.getElementById('includeTax');
@@ -141,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryContainer = document.getElementById('summaryContainer');
     const proposalSummaryTable = document.getElementById('proposalSummaryTable');
     const previewLinks = document.querySelectorAll('.js-preview-proposal-link');
+    let isClientEditMode = false;
 
     const getCsrfToken = () => {
         const cookies = document.cookie ? document.cookie.split(';') : [];
@@ -151,6 +221,123 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return '';
+    };
+
+    const setClientFieldsReadOnly = (isReadOnly) => {
+        const clientTypeInput = document.getElementById('clientType');
+        const clientAddressInput = document.getElementById('clientAddress');
+        const clientPhoneInput = document.getElementById('clientPhone');
+        const clientEmailInput = document.getElementById('clientEmail');
+        const clientWebsiteInput = document.getElementById('clientWebsite');
+
+        const individualFirstNameInput = document.getElementById('individualFirstName');
+        const individualLastNameInput = document.getElementById('individualLastName');
+        const individualBirthDateInput = document.getElementById('individualBirthDate');
+        const individualIdCardNumberInput = document.getElementById('individualIdCardNumber');
+
+        const companyNameInput = document.getElementById('companyName');
+        const companyTypeInput = document.getElementById('companyType');
+        const companyRegistrationNumberInput = document.getElementById('companyRegistrationNumber');
+        const companyTaxIdentificationNumberInput = document.getElementById('companyTaxIdentificationNumber');
+        const companyCreatedAtInput = document.getElementById('companyCreatedAt');
+
+        const individualSection = document.getElementById('individualInfoSection');
+        const companySection = document.getElementById('companyInfoSection');
+
+        const commonInputs = [
+            clientAddressInput,
+            clientPhoneInput,
+            clientEmailInput,
+            clientWebsiteInput,
+        ];
+
+        commonInputs.forEach((inputElement) => {
+            if (!inputElement) {
+                return;
+            }
+            inputElement.readOnly = isReadOnly;
+        });
+
+        if (clientTypeInput) {
+            clientTypeInput.readOnly = true;
+        }
+
+        const isIndividualVisible = Boolean(individualSection) && individualSection.style.display !== 'none';
+        const isCompanyVisible = Boolean(companySection) && companySection.style.display !== 'none';
+
+        [individualFirstNameInput, individualLastNameInput, individualBirthDateInput, individualIdCardNumberInput].forEach((inputElement) => {
+            if (!inputElement) {
+                return;
+            }
+            inputElement.readOnly = isReadOnly || !isIndividualVisible;
+        });
+
+        [companyNameInput, companyTypeInput, companyRegistrationNumberInput, companyTaxIdentificationNumberInput, companyCreatedAtInput].forEach((inputElement) => {
+            if (!inputElement) {
+                return;
+            }
+            inputElement.readOnly = isReadOnly || !isCompanyVisible;
+        });
+    };
+
+    const setClientEditMode = (enabled) => {
+        isClientEditMode = enabled;
+        setClientFieldsReadOnly(!enabled);
+
+        if (editClientBtn) {
+            editClientBtn.textContent = enabled ? 'Annuler' : 'Modifier';
+        }
+
+        if (saveClientBtn) {
+            saveClientBtn.style.display = enabled ? '' : 'none';
+        }
+
+        if (clientSelect) {
+            clientSelect.disabled = enabled;
+        }
+    };
+
+    const saveClientChanges = async () => {
+        const clientId = clientSelect ? Number(clientSelect.value || 0) : 0;
+        if (!clientId) {
+            throw new Error('Aucun client sélectionné.');
+        }
+
+        const payload = {
+            client_id: clientId,
+            address: document.getElementById('clientAddress')?.value || '',
+            phone: document.getElementById('clientPhone')?.value || '',
+            email: document.getElementById('clientEmail')?.value || '',
+            website_url: document.getElementById('clientWebsite')?.value || '',
+        };
+
+        const clientType = (document.getElementById('clientType')?.value || '').trim();
+        if (clientType === 'BtoB') {
+            payload.company_name = document.getElementById('companyName')?.value || '';
+            payload.company_type_id = document.getElementById('companyTypeId')?.value || null;
+            payload.registration_number = document.getElementById('companyRegistrationNumber')?.value || '';
+            payload.tax_identification_number = document.getElementById('companyTaxIdentificationNumber')?.value || '';
+            payload.created_at = document.getElementById('companyCreatedAt')?.value || '';
+        } else {
+            payload.first_name = document.getElementById('individualFirstName')?.value || '';
+            payload.last_name = document.getElementById('individualLastName')?.value || '';
+            payload.birth_date = document.getElementById('individualBirthDate')?.value || '';
+            payload.id_card_number = document.getElementById('individualIdCardNumber')?.value || '';
+        }
+
+        const response = await fetch('/com/api/clients/update/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+            throw new Error(data?.message || 'Erreur lors de la mise à jour du client.');
+        }
     };
 
     const toIsoDate = (dateValue) => {
@@ -457,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Client selection
     if (clientSelect) {
         clientSelect.addEventListener('change', (event) => {
+            setClientEditMode(false);
             loadClientDetails(event.target.value);
         });
 
@@ -465,6 +653,43 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             clearClientReadonlyFields();
         }
+    }
+
+    if (editClientBtn) {
+        editClientBtn.addEventListener('click', async () => {
+            const hasClient = clientSelect && String(clientSelect.value || '').trim() !== '';
+            if (!hasClient) {
+                alert('Veuillez sélectionner un client avant de modifier ses informations.');
+                return;
+            }
+
+            if (isClientEditMode) {
+                setClientEditMode(false);
+                await loadClientDetails(clientSelect.value);
+                return;
+            }
+
+            setClientEditMode(true);
+        });
+    }
+
+    if (saveClientBtn) {
+        saveClientBtn.addEventListener('click', async () => {
+            saveClientBtn.disabled = true;
+            try {
+                await saveClientChanges();
+                setClientEditMode(false);
+                if (clientSelect && clientSelect.value) {
+                    await loadClientDetails(clientSelect.value);
+                }
+                alert('Client mis à jour avec succès.');
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Impossible de mettre à jour le client.');
+            } finally {
+                saveClientBtn.disabled = false;
+            }
+        });
     }
 
     if (dateProposalInput && expirationDateInput) {
@@ -686,6 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     refreshAddedProductsTotal();
+    setClientEditMode(false);
     try {
         const initialDataElement = document.getElementById('initial-proposal-data');
         const initialProposal = initialDataElement ? JSON.parse(initialDataElement.textContent || '[]') : [];
