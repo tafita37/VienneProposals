@@ -1,1 +1,67 @@
-﻿/* Styles spécifiques: propositions */
+﻿.propositions-mobile-list {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .table-wrapper {
+        display: none;
+    }
+
+    .propositions-mobile-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .proposition-mobile-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+        background: #fff;
+        box-shadow: var(--shadow);
+    }
+
+    .proposition-mobile-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: flex-start;
+        margin-bottom: 0.9rem;
+    }
+
+    .proposition-mobile-amount {
+        font-weight: 700;
+        color: var(--accent);
+        white-space: nowrap;
+    }
+
+    .proposition-mobile-grid {
+        display: grid;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .proposition-mobile-label {
+        display: block;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-light);
+        margin-bottom: 0.2rem;
+    }
+
+    .proposition-mobile-value {
+        display: block;
+        color: var(--text-dark);
+    }
+
+    .proposition-mobile-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .proposition-mobile-button {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.9rem;
+    }
+}

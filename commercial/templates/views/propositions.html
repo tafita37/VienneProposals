@@ -42,8 +42,8 @@
                 <tr>
                     <th>Numéro</th>
                     <th>Client</th>
-                    <th>Date</th>
-                    <th>Valable jusqu'au</th>
+                    <th class="hide-mobile">Date</th>
+                    <th class="hide-mobile">Valable jusqu'au</th>
                     <th>Montant HT</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -54,8 +54,8 @@
                 <tr>
                     <td><strong>PROP-2026-{{ proposition.id }}</strong></td>
                     <td>{{ proposition.client.name }}</td>
-                    <td>{{ proposition.date_proposal }}</td>
-                    <td>{{ proposition.expiration_date|date:"j F Y" }}</td>
+                    <td class="hide-mobile">{{ proposition.date_proposal }}</td>
+                    <td class="hide-mobile">{{ proposition.expiration_date|date:"j F Y" }}</td>
                     <td><strong>{{proposition.amount_ttc|floatformat:2}} €</strong></td>
                     <td>
                         {% if proposition.state == 1 %}
@@ -87,6 +87,60 @@
                 {%endfor%}
             </tbody>
         </table>
+    </div>
+
+    <div class="propositions-mobile-list">
+        {% for proposition in proposals %}
+        <article class="proposition-mobile-card">
+            <div class="proposition-mobile-head">
+                <strong>PROP-2026-{{ proposition.id }}</strong>
+                <span class="proposition-mobile-amount">{{ proposition.amount_ttc|floatformat:2 }} €</span>
+            </div>
+            <div class="proposition-mobile-grid">
+                <div>
+                    <span class="proposition-mobile-label">Client</span>
+                    <span class="proposition-mobile-value">{{ proposition.client.name }}</span>
+                </div>
+                <div>
+                    <span class="proposition-mobile-label">Date</span>
+                    <span class="proposition-mobile-value">{{ proposition.date_proposal }}</span>
+                </div>
+                <div>
+                    <span class="proposition-mobile-label">Valable jusqu'au</span>
+                    <span class="proposition-mobile-value">{{ proposition.expiration_date|date:"j F Y" }}</span>
+                </div>
+                <div>
+                    <span class="proposition-mobile-label">Statut</span>
+                    <span class="proposition-mobile-value">
+                        {% if proposition.state == 1 %}
+                            <span class="badge badge-success">Validée</span>
+                        {% else %}
+                            <span class="badge badge-info">Brouillon</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="proposition-mobile-actions">
+                {% if proposition.state == 1 %}
+                <a
+                    href="{% url 'proposition_detail_page' %}?proposal_id={{ proposition.id }}"
+                    class="btn proposition-mobile-button"
+                >
+                    Voir
+                </a>
+                {% else %}
+                <a
+                    href="{% url 'edit_draft_proposition_page' %}?proposal_id={{ proposition.id }}"
+                    class="btn proposition-mobile-button"
+                >
+                    Modifier
+                </a>
+                {% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <p style="color: var(--text-light); margin-top: 1rem;">Aucune proposition disponible.</p>
+        {% endfor %}
     </div>
 </div>
 
