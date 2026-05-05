@@ -370,9 +370,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const unitPrice = Number(product.sale_unit_price ?? product.prix_unitaire_vente ?? product.prix_unitaire ?? 0);
         const coefficient = Number(item?.coefficient || 0);
         const total = Number(product.total || (unitPrice * coefficient * quantity));
+        const explanation = item?.explanation || '';
+        const explanationValue = escapeHtml(explanation);
+        const explanationEmpty = !String(explanation).trim();
 
-        return `
-            <tr data-product-id="${productId}">
+        let html = `
+            <tr data-product-id="${productId}" data-quantity="${quantity}" data-coefficient="${coefficient}">
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${categoryName}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${designation}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity}</td>
@@ -383,6 +386,97 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
             </tr>
         `;
+
+        html += `
+            <tr class="product-explanation-row" data-product-id="${productId}" style="background-color: #fafaf8; border-bottom: 2px solid var(--border);">
+                <td colspan="6" style="padding: 1rem;">
+                    <div data-role="explanation-view" style="border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                            <span style="font-weight: 600; font-size: 0.85rem; display: block;">💬 Explication</span>
+                            <button type="button" data-action="edit-explanation" data-product-id="${productId}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 4px;">
+                                Modifier
+                            </button>
+                        </div>
+                        <p data-role="explanation-text" style="margin: 0; color: var(--text-dark); font-size: 0.9rem; ${explanationEmpty ? 'font-style: italic; color: var(--text-light);' : ''}">${explanationEmpty ? 'Aucune explication' : explanationValue}</p>
+                    </div>
+                    <div data-role="explanation-edit" style="display: none; border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
+                        <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Modifier l’explication</label>
+                        <textarea data-role="explanation-input" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; resize: vertical; min-height: 70px; font-size: 0.9rem; font-family: inherit;">${explanationValue}</textarea>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                            <button type="button" data-action="cancel-explanation-edit" data-product-id="${productId}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px;">
+                                Annuler
+                            </button>
+                            <button type="button" data-action="save-explanation" data-product-id="${productId}" style="background: var(--success); color: white; border: none; cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px; font-weight: 600;">
+                                Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        return html;
+    };
+
+    const setExplanationEditingState = (row, isEditing) => {
+        if (!row) {
+            return;
+        }
+
+        const view = row.querySelector('[data-role="explanation-view"]');
+        const edit = row.querySelector('[data-role="explanation-edit"]');
+
+        if (view) {
+            view.style.display = isEditing ? 'none' : '';
+        }
+
+        if (edit) {
+            edit.style.display = isEditing ? '' : 'none';
+        }
+    };
+
+    const saveProductExplanation = async (row, explanation) => {
+        const productId = Number(row?.dataset.productId || 0);
+
+        if (!productId) {
+            throw new Error('Produit invalide.');
+        }
+
+        const response = await fetch('/com/api/proposals/selected-products/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify({
+                selected_products: [
+                    {
+                        product_id: productId,
+                        explanation,
+                    },
+                ],
+            }),
+        });
+
+        if (!response.ok) {
+            let errorMessage = `Réponse HTTP invalide: ${response.status}`;
+            try {
+                const errorPayload = await response.json();
+                if (errorPayload?.message) {
+                    errorMessage = errorPayload.message;
+                }
+            } catch (parseError) {
+                // No JSON payload available
+            }
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        if (!data?.success) {
+            throw new Error(data?.message || 'Erreur lors de l\'enregistrement.');
+        }
+
+        return data;
     };
 
     const upsertAddedProductRow = (item) => {
@@ -395,6 +489,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const rowHtml = createAddedProductRowHtml(item);
 
         if (existingRow) {
+            const nextRow = existingRow.nextElementSibling;
+            if (nextRow && nextRow.classList.contains('product-explanation-row')) {
+                nextRow.remove();
+            }
             existingRow.outerHTML = rowHtml;
             return;
         }
@@ -750,6 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const productId = document.getElementById('productSelect').value;
             const quantity = parseFloat(document.getElementById('productQuantity').value) || 0;
             const coefficient = parseFloat(document.getElementById('productCoefficient').value) || 1;
+            const explanation = document.getElementById('productExplanation').value || '';
 
             if (!productId || quantity <= 0) {
                 alert('Veuillez sélectionner un produit et entrer une quantité valide.');
@@ -769,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 product_id: Number(productId),
                                 coefficient,
                                 quantity,
+                                explanation,
                             },
                         ],
                     }),
@@ -794,6 +894,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (updatedProposalItem) {
                     upsertAddedProductRow(updatedProposalItem);
                     refreshAddedProductsTotal();
+                    // Clear explanation field after adding
+                    const explanationInput = document.getElementById('productExplanation');
+                    if (explanationInput) {
+                        explanationInput.value = '';
+                    }
                 }
             } catch (error) {
                 console.error('Erreur lors de l\'ajout du produit :', error);
@@ -811,6 +916,64 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addedProductsBody) {
         addedProductsBody.addEventListener('click', async (event) => {
             const targetElement = event.target instanceof Element ? event.target : event.target?.parentElement;
+            const editButton = targetElement?.closest('button[data-action="edit-explanation"]');
+            if (editButton) {
+                const explanationRow = editButton.closest('tr.product-explanation-row');
+                if (explanationRow) {
+                    setExplanationEditingState(explanationRow, true);
+                    const textarea = explanationRow.querySelector('[data-role="explanation-input"]');
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                    }
+                }
+                return;
+            }
+
+            const cancelButton = targetElement?.closest('button[data-action="cancel-explanation-edit"]');
+            if (cancelButton) {
+                const explanationRow = cancelButton.closest('tr.product-explanation-row');
+                if (explanationRow) {
+                    setExplanationEditingState(explanationRow, false);
+                }
+                return;
+            }
+
+            const saveButton = targetElement?.closest('button[data-action="save-explanation"]');
+            if (saveButton) {
+                const explanationRow = saveButton.closest('tr.product-explanation-row');
+                const explanationInput = explanationRow?.querySelector('[data-role="explanation-input"]');
+
+                if (!explanationRow || !explanationInput) {
+                    return;
+                }
+
+                saveButton.disabled = true;
+                try {
+                    const data = await saveProductExplanation(explanationRow, explanationInput.value || '');
+
+                    if (Array.isArray(data?.proposal)) {
+                        refreshDerivedProposalViews(data.proposal);
+                    }
+
+                    const updatedProposalItem = Array.isArray(data?.proposal)
+                        ? data.proposal.find((item) => Number(item?.product?.id) === Number(explanationRow.dataset.productId || 0))
+                        : null;
+
+                    if (updatedProposalItem) {
+                        upsertAddedProductRow(updatedProposalItem);
+                        refreshAddedProductsTotal();
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la modification de l\'explication :', error);
+                    alert('Erreur lors de la modification de l\'explication.');
+                } finally {
+                    saveButton.disabled = false;
+                }
+
+                return;
+            }
+
             const removeButton = targetElement?.closest('button[data-action="remove-product"]');
             if (!removeButton) {
                 return;
@@ -854,6 +1017,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (row) {
+                    // Remove the product row and the explanation row (if it exists)
+                    const nextRow = row.nextElementSibling;
+                    if (nextRow && nextRow.style.backgroundColor === 'rgb(250, 250, 248)') {
+                        nextRow.remove();
+                    }
                     row.remove();
                 }
 

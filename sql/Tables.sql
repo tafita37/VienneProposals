@@ -131,6 +131,8 @@ CREATE TABLE proposal_product(
    FOREIGN KEY(commercial_proposal_id) REFERENCES commercial_proposal(id)
 );
 
+ALTER TABLE proposal_product ADD COLUMN explanation TEXT;
+
 CREATE TABLE excel_import(
    id SERIAL,
    name VARCHAR(50)  NOT NULL,

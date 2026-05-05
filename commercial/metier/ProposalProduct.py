@@ -23,6 +23,7 @@ class ProposalProduct(models.Model):
         null=True,
         blank=True
     )
+    explanation=models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = 'proposal_product'
