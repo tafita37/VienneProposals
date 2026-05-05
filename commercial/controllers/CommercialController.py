@@ -78,6 +78,7 @@ def _proposal_item_from_proposal_product(proposal_product):
     purchase_unit_price = max(0.0, float(getattr(proposal_product, 'purchase_unit_price', 0) or 0))
     coefficient = max(0.0, float(getattr(proposal_product, 'coefficient', 0) or 0))
     quantity = max(0.0, float(getattr(proposal_product, 'quantity', 0) or 0))
+    explanation = str(getattr(proposal_product, 'explanation', '') or '').strip()
     product_id = 0
     designation = ''
     category_name = 'Non catégorisé'
@@ -107,6 +108,7 @@ def _proposal_item_from_proposal_product(proposal_product):
         },
         'coefficient': coefficient,
         'quantity': quantity,
+        'explanation': explanation,
     }
 
 
@@ -152,12 +154,15 @@ def _proposal_rows_from_session(session_proposal):
         if purchase_unit_price < 0:
             purchase_unit_price = 0.0
 
+        explanation = item.get('explanation', '').strip() if isinstance(item, dict) else ''
+
         proposal_rows.append({
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
             'sale_unit_price': max(0.0, sale_unit_price),
             'purchase_unit_price': max(0.0, purchase_unit_price),
             'product_id': product_id if product_id > 0 else None,
+            'explanation': explanation,
         })
 
     return proposal_rows
@@ -259,6 +264,7 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
                     purchase_unit_price=row['purchase_unit_price'],
                     commercial_proposal=commercial_proposal,
                     product=product_obj,
+                    explanation=row.get('explanation', ''),
                 )
             )
 
@@ -301,6 +307,7 @@ def _build_session_from_draft(request, commercial_proposal):
 @user_required
 def catalogue_page(request):
     list_proposal = request.session.get('proposal', [])
+    print(list_proposal)
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
     allCategory = Category.objects.all()
@@ -326,6 +333,7 @@ def catalogue_page(request):
                 product_id = int(product_value)
                 coefficient = float(proposal_item.get('coefficient', 0))
                 quantity = float(proposal_item.get('quantity', 0))
+                explanation=str(proposal_item.get('explanation', '') or '').strip()
             except (TypeError, ValueError):
                 continue
 
@@ -335,6 +343,7 @@ def catalogue_page(request):
             proposal_by_product[product_id] = {
                 'coefficient': max(0.0, coefficient),
                 'quantity': max(0.0, quantity),
+                'explanation': explanation
             }
 
     for product in allProducts:
@@ -342,9 +351,11 @@ def catalogue_page(request):
         if existing_value:
             product.catalogue_coefficient = existing_value['coefficient']
             product.catalogue_quantity = existing_value['quantity']
+            product.catalogue_explanation = existing_value['explanation']
         else:
             product.catalogue_coefficient = float(product.coefficient)
             product.catalogue_quantity = 0.0
+            product.catalogue_explanation = ''
 
     return render(
         request, 
@@ -676,6 +687,7 @@ def save_selected_products_api(request):
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
+            'explanation': raw_item.get('explanation', '').strip(),
         }
 
     existing_proposal = request.session.get('proposal', [])
@@ -694,8 +706,11 @@ def save_selected_products_api(request):
 
         try:
             product_id = int(item.get('product_id', item.get('product', 0)))
-            coefficient = float(item.get('coefficient', 0))
-            quantity = float(item.get('quantity', 0))
+            existing_item = proposal_by_product.get(product_id, {})
+            coefficient_value = item.get('coefficient', existing_item.get('coefficient', 0))
+            quantity_value = item.get('quantity', existing_item.get('quantity', 0))
+            coefficient = float(coefficient_value)
+            quantity = float(quantity_value)
         except (TypeError, ValueError):
             continue
 
@@ -725,6 +740,7 @@ def save_selected_products_api(request):
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
+            'explanation': str(item.get('explanation', existing_item.get('explanation', '')) or '').strip(),
         }
 
     request.session['proposal'] = list(proposal_by_product.values())
@@ -1087,6 +1103,7 @@ def appercu_proposition_page(request):
             coefficient = 0.0
             sale_unit_price = 0.0
             product_total = 0.0
+            explanation = str(item.get('explanation', '')).strip()
 
             if isinstance(product, dict):
                 try:
@@ -1118,6 +1135,7 @@ def appercu_proposition_page(request):
                 'sale_unit_price': max(0.0, sale_unit_price),
                 'coefficient': max(0.0, coefficient),
                 'total': product_total,
+                'explanation': explanation,
             })
             summary_by_category[category_name]['total'] += product_total
 
@@ -1190,6 +1208,7 @@ def proposition_detail(request):
         coefficient = max(0.0, float(proposal_product.coefficient))
         sale_unit_price = max(0.0, float(proposal_product.sale_unit_price))
         product_total = quantity * coefficient * sale_unit_price
+        explanation = str(proposal_product.explanation or '').strip()
 
         category_name = 'Non catégorisé'
         designation = f"Produit {proposal_product.id}"
@@ -1211,6 +1230,7 @@ def proposition_detail(request):
             'sale_unit_price': sale_unit_price,
             'coefficient': coefficient,
             'total': product_total,
+            'explanation': explanation,
         })
         summary_by_category[category_name]['total'] += product_total
 

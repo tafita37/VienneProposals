@@ -83,6 +83,16 @@
                             <td>{{ item.sale_unit_price|floatformat:2 }}€</td>
                             <td><strong>{{ item.total|floatformat:2 }}€</strong></td>
                         </tr>
+                        {% if item.explanation %}
+                        <tr style="background-color: #fafaf8; border-bottom: 2px solid var(--border);">
+                            <td colspan="5" style="padding: 1rem;">
+                                <div style="border-left: 3px solid var(--accent); padding-left: 1rem;">
+                                    <span style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.3rem; color: var(--text-dark);">💬 Explication</span>
+                                    <p style="margin: 0; color: var(--text-dark); font-size: 0.9rem;">{{ item.explanation }}</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
                         {% endfor %}
                         <tr class="preview-row-total">
                             <td colspan="4" style="text-align: right;">Sous-total {{ category.name }}</td>

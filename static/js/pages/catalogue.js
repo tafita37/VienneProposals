@@ -14,6 +14,16 @@
         maximumFractionDigits: 2,
     });
 
+    const escapeHtml = (unsafe) => {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+
     const parseNumber = (value) => {
         if (typeof value !== 'string') {
             return 0;
@@ -116,6 +126,21 @@
             `;
             catalogueTable.appendChild(row);
             attachRowEvents(row);
+
+            // Add explanation row so it stays visible after filtering
+            const explanationText = product.catalogue_explanation || '';
+            const explRow = document.createElement('tr');
+            explRow.innerHTML = `
+                <td colspan="7" style="background-color: #f9f7f4;">
+                    <div style="padding: 0.5rem 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.3rem;">
+                            💬 Explication / Commentaire
+                        </label>
+                        <textarea class="product-comment" placeholder="Ajoutez une explication ou un commentaire pour ce produit..." style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; resize: vertical; min-height: 60px;">${escapeHtml(explanationText)}</textarea>
+                    </div>
+                </td>
+            `;
+            catalogueTable.appendChild(explRow);
         });
     };
 
