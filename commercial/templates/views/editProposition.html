@@ -1,0 +1,297 @@
+{% extends 'baseUser.html' %}
+
+{% load static %}
+
+{% load l10n %}
+
+{% block title %}Modifier Proposition - Vienne Agencement{% endblock %}
+
+{% block header_title %}Nouvelle proposition{% endblock %}
+
+{% block header_subtitle %}Créez une nouvelle proposition commerciale{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/newProposition.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/editProposition.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="proposition-header">
+    <div class="form-section">
+        <h3>Informations Client</h3>
+        <div class="form-group">
+            <label>Client</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <select id="clientSelect"
+                    style="flex: 1 1 240px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <option value="">Sélectionner un client</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}" {% if selected_client_id == client.id %}selected{% endif %}>{{ client.name }} - {% if client.is_company %}BtoB{% else %}BtoC{% endif %}</option>
+                    {% endfor %}
+                </select>
+                <a href="{% url 'new_client_user_page' %}" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">+
+                    Client</a>
+                <button type="button" id="editClientBtn" class="btn btn-secondary" style="flex: 0 0 auto; padding: 0.6rem 1rem;">Modifier</button>
+                <button type="button" id="saveClientBtn" class="btn btn-primary" style="display: none; flex: 0 0 auto; padding: 0.6rem 1rem;">Valider</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Type de client</label>
+            <input type="text" id="clientType" placeholder="Type de client" readonly>
+        </div>
+        <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" id="clientAddress" placeholder="Adresse" readonly>
+        </div>
+        <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" id="clientPhone" placeholder="Téléphone" readonly>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="clientEmail" placeholder="Email" readonly>
+        </div>
+        <div class="form-group">
+            <label>Site web</label>
+            <input type="text" id="clientWebsite" placeholder="Site web" readonly>
+        </div>
+
+        <div id="individualInfoSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <h4 style="margin-bottom: 0.75rem; color: var(--text-dark);">Informations BtoC</h4>
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="individualFirstName" placeholder="Prénom" readonly>
+            </div>
+            <div class="form-group">
+                <label>Nom</label>
+                <input type="text" id="individualLastName" placeholder="Nom" readonly>
+            </div>
+            <div class="form-group">
+                <label>Date de naissance</label>
+                <input type="date" id="individualBirthDate" placeholder="Date de naissance" readonly>
+            </div>
+            <div class="form-group">
+                <label>Numéro de carte d'identité</label>
+                <input type="text" id="individualIdCardNumber" placeholder="Numéro de carte d'identité" readonly>
+            </div>
+        </div>
+
+        <div id="companyInfoSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <h4 style="margin-bottom: 0.75rem; color: var(--text-dark);">Informations BtoB</h4>
+            <div class="form-group">
+                <label>Raison sociale</label>
+                <input type="text" id="companyName" placeholder="Raison sociale" readonly>
+            </div>
+            <div class="form-group">
+                <label>Type d'entreprise</label>
+                <input type="text" id="companyType" placeholder="Type d'entreprise" readonly>
+                <input type="hidden" id="companyTypeId">
+            </div>
+            <div class="form-group">
+                <label>Numéro d'enregistrement</label>
+                <input type="text" id="companyRegistrationNumber" placeholder="Numéro d'enregistrement" readonly>
+            </div>
+            <div class="form-group">
+                <label>Numéro d'identification fiscale</label>
+                <input type="text" id="companyTaxIdentificationNumber" placeholder="Numéro d'identification fiscale" readonly>
+            </div>
+            <div class="form-group">
+                <label>Date de création</label>
+                <input type="date" id="companyCreatedAt" placeholder="Date de création" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+        <h3>Options</h3>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Date de proposition</label>
+            <input type="date" id="dateProposal"
+                value="{{ proposal_date_proposition }}"
+                style="max-width: 100%; margin-right: 0.75rem; cursor: pointer;">
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Date d'expiration</label>
+            <input type="date" id="expirationDate"
+                value="{{ proposal_expiration_date }}"
+                style="max-width: 100%; margin-right: 0.75rem; cursor: pointer;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="includeTax" style="margin-right: 0.75rem; cursor: pointer;" {% if proposal_include_tva %}checked{% endif %}>
+                <span>Inclure TVA (20%)</span>
+            </label>
+        </div>
+        <div>
+            <a href="{% url 'appercu_proposition_page' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
+                Proposition</a>
+        </div>
+    </div>
+</div>
+<!-- SECTION SAISIE PRODUITS -->
+<div class="product-input-section"
+    style="background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow);">
+    <h3 style="margin-bottom: 1.5rem; color: var(--primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+        <span>📝</span> Saisie des produits
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 1rem; align-items: end;">
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Catégorie</label>
+            <select id="productCategorySelect" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                <option value="">Sélectionner</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Produit</label>
+            <select id="productSelect" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                <option value="">Sélectionner</option>
+            </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Quantité</label>
+            <input id="productQuantity" type="number" value="1" min="1" step="1"
+                style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Coefficient</label>
+            <input id="productCoefficient" type="number" value="1" min="0.1" step="0.1"
+                style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+        </div>
+
+        <div>
+            <button id="addProductBtn"
+                style="background: var(--success); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; height: 45px; white-space: nowrap;">
+                ➕ Ajouter
+            </button>
+        </div>
+    </div>
+
+    <div style="margin-top: 1rem; display: flex; flex-direction: column;">
+        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">💬 Explication / Commentaire (optionnel)</label>
+        <textarea id="productExplanation" placeholder="Ajoutez une explication ou un commentaire pour ce produit..." style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; resize: vertical; min-height: 70px; font-size: 0.9rem; font-family: inherit;"></textarea>
+    </div>
+
+    <!-- Liste des produits saisis (exemple statique) -->
+    <div style="margin-top: 2rem;">
+        <h4 style="margin-bottom: 1rem; font-size: 1rem;">Produits ajoutés :</h4>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Catégorie</th>
+                    <th style="padding: 0.75rem; text-align: left;">Produit</th>
+                    <th style="padding: 0.75rem; text-align: left;">Qté</th>
+                    <th style="padding: 0.75rem; text-align: left;">Prix unitaire</th>
+                    <th style="padding: 0.75rem; text-align: left;">Total</th>
+                    <th style="padding: 0.75rem; text-align: left;"></th>
+                </tr>
+            </thead>
+            <tbody id="addedProductsBody">
+                <!-- Exemple de ligne de produit -->
+                {%for proposal in proposal %}
+                <tr data-product-id="{{ proposal.product.id }}">
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.category_name }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.designation }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.quantity }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</td>
+                    <td
+                        style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">
+                        {{ proposal.product.total|floatformat:2 }} €</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <button type="button" data-action="remove-product" data-product-id="{{ proposal.product.id }}"
+                            style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem;">🗑️</button>
+                    </td>
+                </tr>
+                <tr class="product-explanation-row" data-product-id="{{ proposal.product.id }}" data-quantity="{{ proposal.quantity }}" data-coefficient="{{ proposal.coefficient|default:0 }}" style="background-color: #fafaf8; border-bottom: 2px solid var(--border);">
+                    <td colspan="6" style="padding: 1rem;">
+                        <div data-role="explanation-view" style="border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                                <span style="font-weight: 600; font-size: 0.85rem; display: block;">💬 Explication</span>
+                                <button type="button" data-action="edit-explanation" data-product-id="{{ proposal.product.id }}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 4px;">
+                                    Modifier
+                                </button>
+                            </div>
+                            {% if proposal.explanation %}
+                            <p data-role="explanation-text" style="margin: 0; color: var(--text-dark); font-size: 0.9rem;">{{ proposal.explanation }}</p>
+                            {% else %}
+                            <p data-role="explanation-text" style="margin: 0; color: var(--text-light); font-size: 0.9rem; font-style: italic;">Aucune explication</p>
+                            {% endif %}
+                        </div>
+                        <div data-role="explanation-edit" style="display: none; border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
+                            <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Modifier l’explication</label>
+                            <textarea data-role="explanation-input" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; resize: vertical; min-height: 70px; font-size: 0.9rem; font-family: inherit;">{{ proposal.explanation }}</textarea>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                                <button type="button" data-action="cancel-explanation-edit" data-product-id="{{ proposal.product.id }}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px;">
+                                    Annuler
+                                </button>
+                                <button type="button" data-action="save-explanation" data-product-id="{{ proposal.product.id }}" style="background: var(--success); color: white; border: none; cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px; font-weight: 600;">
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {%endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f9f7f4; font-weight: 600;">
+                    <td colspan="5" style="padding: 0.75rem; text-align: right;">Total :</td>
+                    <td id="addedProductsTotal" style="padding: 0.75rem; color: var(--accent);">{{ proposal_total|floatformat:2 }} €</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<div class="summary-by-category" id="summaryContainer">
+    <h2 style="margin-bottom: 1.5rem; color: var(--text-dark);">Récapitulatif par Catégorie</h2>
+    {% if summary_categories %}
+    {% for category in summary_categories %}
+    <div class="summary-section">
+        <div class="summary-category-title">
+            <span>{{ category.name }}</span>
+            <span>{{ category.total|floatformat:2 }} €</span>
+        </div>
+        {% for item in category.items %}
+        <div class="summary-item">
+            <div class="summary-item-name">{{ item.designation }}</div>
+            <div class="summary-item-qty">{{ item.quantity|floatformat:2 }}</div>
+            <div class="summary-item-total">{{ item.total|floatformat:2 }} €</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color: var(--text-light); text-align: center; padding: 2rem;">
+        Veuillez aller au 
+        <a 
+            href="{% url 'catalogue_page' %}" 
+            style="color: var(--accent); text-decoration: underline;"
+        >
+            catalogue
+        </a>
+        pour sélectionner
+        des produits...
+    </p>
+    {% endif %}
+</div>
+
+<div class="proposal-total">
+    Total estimé : <span id="totalAmount">{{ proposal_total|floatformat:2 }} €</span>
+</div>
+<div class="action-buttons">
+    <!-- <a href="propositions.html" class="btn btn-secondary">← Retour</a> -->
+    <a href="{% url 'appercu_proposition_page_edit' %}" class="btn btn-primary js-preview-proposal-link">Aperçu et valider</a>
+</div>
+
+{{ proposal|json_script:"initial-proposal-data" }}
+{% endblock %}
