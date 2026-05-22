@@ -15,7 +15,7 @@
 {% endblock %}
 
 {% block js %}
-<script src="{% static 'js/pages/preview-proposition.js' %}"></script>
+<script src="{% static 'js/pages/preview-proposition-edit.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -538,11 +538,11 @@
 
     <div class="action-buttons">
         <a href="{% url 'new_proposition_page' %}" class="btn btn-secondary">← Retour</a>
-        <form action="{% url 'save_draft_proposition_page' %}" method="post" style="display: inline;">
+        <form action="{% url 'save_draft_proposition_edit_page' %}" method="post" style="display: inline;">
             {% csrf_token %}
             <button type="submit" class="btn btn-secondary" title="Enregistrer cette proposition comme brouillon">📝 Enregistrer en brouillon</button>
         </form>
-        <a href="{% url 'validate_proposition_page' %}" class="btn btn-primary">✅ Valider</a>
+        <a href="{% url 'validate_proposition_edit_page' %}" class="btn btn-primary">✅ Valider</a>
         <button type="button" class="btn btn-pdf" onclick="window.print()">📥 Télécharger PDF</button>
     </div>
 </div>

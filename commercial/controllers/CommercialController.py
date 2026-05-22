@@ -282,32 +282,124 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
 
     return redirect(success_redirect_name)
 
+def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
+    session_proposal = request.session.get('proposal_edit', [])
+    session_client_id = request.session.get('proposal_client_id_edit')
+    session_date_proposition = request.session.get('proposal_date_proposition_edit')
+    session_expiration_date = request.session.get('proposal_expiration_date_edit')
+    session_include_tva = request.session.get('proposal_include_tva_edit', True)
+    draft_id_raw = request.session.get('proposal_draft_id')
 
-def _build_session_from_draft(request, commercial_proposal):
-    proposal_items = []
+    if not isinstance(session_proposal, list) or len(session_proposal) == 0:
+        return redirect('appercu_proposition_page')
 
-    proposal_products = commercial_proposal.proposal_products.select_related('product').prefetch_related('product__categories').all()
-    for proposal_product in proposal_products:
-        proposal_items.append(_proposal_item_from_proposal_product(proposal_product))
+    if session_client_id in (None, ''):
+        return redirect('appercu_proposition_page')
 
-    request.session['proposal'] = proposal_items
-    request.session['proposal_client_id'] = commercial_proposal.client_id
-    request.session['proposal_date_proposition'] = commercial_proposal.date_proposal.isoformat() if commercial_proposal.date_proposal else ''
-    if commercial_proposal.expiration_date:
-        request.session['proposal_expiration_date'] = commercial_proposal.expiration_date.isoformat()
-    elif commercial_proposal.date_proposal:
-        request.session['proposal_expiration_date'] = (commercial_proposal.date_proposal + timedelta(days=30)).isoformat()
+    try:
+        client_id = int(session_client_id)
+    except (TypeError, ValueError):
+        return redirect('appercu_proposition_page')
+
+    selected_client = Client.objects.filter(id=client_id).first()
+    if selected_client is None:
+        return redirect('appercu_proposition_page')
+
+    if session_date_proposition in (None, ''):
+        proposal_date = date.today()
     else:
-        request.session['proposal_expiration_date'] = ''
-    request.session['proposal_include_tva'] = float(commercial_proposal.amount_ttc or 0) > float(commercial_proposal.amount_ht or 0)
-    request.session['proposal_draft_id'] = commercial_proposal.id
+        try:
+            proposal_date = date.fromisoformat(str(session_date_proposition))
+        except (TypeError, ValueError):
+            return redirect('appercu_proposition_page')
+
+    if session_expiration_date in (None, ''):
+        expiration_date = proposal_date + timedelta(days=30)
+    else:
+        try:
+            expiration_date = date.fromisoformat(str(session_expiration_date))
+        except (TypeError, ValueError):
+            return redirect('appercu_proposition_page')
+
+    proposal_rows = _proposal_rows_from_session(session_proposal)
+    if len(proposal_rows) == 0:
+        return redirect('appercu_proposition_page')
+
+    include_tva = bool(session_include_tva)
+    amount_ht = _compute_proposal_total(session_proposal)
+    amount_ttc = amount_ht * 1.2 if include_tva else amount_ht
+
+    product_ids = [row['product_id'] for row in proposal_rows if row['product_id'] is not None]
+    products_by_id = {
+        product.id: product
+        for product in Product.objects.filter(id__in=product_ids).select_related('unit').prefetch_related('categories')
+    }
+
+    with transaction.atomic():
+        commercial_proposal = None
+        if draft_id_raw not in (None, ''):
+            try:
+                draft_id = int(draft_id_raw)
+            except (TypeError, ValueError):
+                draft_id = 0
+
+            if draft_id > 0:
+                commercial_proposal = CommercialProposal.objects.filter(id=draft_id, commercial=request.user).first()
+
+        if commercial_proposal is not None:
+            commercial_proposal.date_proposal = proposal_date
+            commercial_proposal.expiration_date = expiration_date
+            commercial_proposal.amount_ht = amount_ht
+            commercial_proposal.amount_ttc = amount_ttc
+            commercial_proposal.client = selected_client
+            commercial_proposal.commercial = request.user
+            commercial_proposal.state = state
+            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state'])
+            commercial_proposal.proposal_products.all().delete()
+        else:
+            commercial_proposal = CommercialProposal.objects.create(
+                date_proposal=proposal_date,
+                expiration_date=expiration_date,
+                amount_ht=amount_ht,
+                amount_ttc=amount_ttc,
+                client=selected_client,
+                commercial=request.user,
+                state=state,
+            )
+
+        proposal_product_objects = []
+        for row in proposal_rows:
+            product_obj = products_by_id.get(row['product_id']) if row['product_id'] is not None else None
+            proposal_product_objects.append(
+                ProposalProduct(
+                    coefficient=row['coefficient'],
+                    quantity=row['quantity'],
+                    sale_unit_price=row['sale_unit_price'],
+                    purchase_unit_price=row['purchase_unit_price'],
+                    commercial_proposal=commercial_proposal,
+                    product=product_obj,
+                    explanation=row.get('explanation', ''),
+                )
+            )
+
+        ProposalProduct.objects.bulk_create(proposal_product_objects)
+
+    for session_key in ('proposal_edit', 'proposal_client_id_edit', 'proposal_date_proposition_edit', 'proposal_expiration_date_edit', 'proposal_include_tva_edit', 'proposal_draft_id'):
+        if session_key in request.session:
+            del request.session[session_key]
     request.session.modified = True
+
+    if state == 0:
+        messages.success(request, 'Brouillon enregistré avec succès.')
+    else:
+        messages.success(request, 'Proposition validée avec succès.')
+
+    return redirect(success_redirect_name)
 
 @require_GET
 @user_required
 def catalogue_page(request):
     list_proposal = request.session.get('proposal', [])
-    print(list_proposal)
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
     allCategory = Category.objects.all()
@@ -751,7 +843,281 @@ def save_selected_products_api(request):
         'message': 'Produits enregistrés avec succès.',
         'proposal': request.session['proposal'],
     })
+    
+@require_POST
+@user_required
+def save_selected_products_edit_api(request):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Payload JSON invalide.'}, status=400)
 
+    raw_selected_products = payload.get('selected_products', [])
+    if not isinstance(raw_selected_products, list):
+        return JsonResponse({'success': False, 'message': 'Le champ selected_products doit être une liste.'}, status=400)
+
+    proposal_by_product = {}
+
+    def upsert_item(raw_item, product_key='product'):
+        if not isinstance(raw_item, dict):
+            return
+
+        try:
+            product_value = raw_item.get(product_key, raw_item.get('product_id', 0))
+            if isinstance(product_value, dict):
+                product_id = int(product_value.get('id', product_value.get('product_id', 0)))
+                designation = str(product_value.get('designation', '')).strip()
+                category_name = str(product_value.get('category_name', '')).strip()
+                prix_unitaire_vente = float(product_value.get('sale_unit_price', product_value.get('prix_unitaire_vente', 0)))
+                prix_unitaire_achat = float(product_value.get('purchase_unit_price', product_value.get('prix_unitaire_achat', 0)))
+            else:
+                product_id = int(product_value)
+                designation = ''
+                category_name = ''
+                prix_unitaire_vente = float(raw_item.get('sale_unit_price', raw_item.get('prix_unitaire_vente', 0)))
+                prix_unitaire_achat = float(raw_item.get('purchase_unit_price', raw_item.get('prix_unitaire_achat', 0)))
+
+            coefficient = float(raw_item.get('coefficient', 0))
+            quantity = float(raw_item.get('quantity', 0))
+        except (TypeError, ValueError, AttributeError):
+            return
+
+        if product_id <= 0 or quantity <= 0:
+            return
+
+            if prix_unitaire_achat <= 0 or not designation or not category_name:
+                product = Product.objects.select_related('unit').prefetch_related('categories').filter(
+                    id=product_id
+                ).first()
+            if product is not None:
+                designation = designation or str(product.designation)
+                category_name = category_name or _product_category_label(product)
+                if prix_unitaire_vente <= 0:
+                    prix_unitaire_vente = float(product.sale_unit_price)
+                if prix_unitaire_achat <= 0:
+                    prix_unitaire_achat = float(product.purchase_unit_price)
+
+        proposal_by_product[product_id] = {
+            'product': {
+                'id': product_id,
+                'designation': designation,
+                'category_name': category_name,
+                'prix_unitaire_vente': prix_unitaire_vente,
+                'prix_unitaire_achat': prix_unitaire_achat,
+                'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
+                'sale_unit_price': prix_unitaire_vente,
+                'purchase_unit_price': prix_unitaire_achat,
+            },
+            'coefficient': max(0.0, coefficient),
+            'quantity': max(0.0, quantity),
+            'explanation': raw_item.get('explanation', '').strip(),
+        }
+
+    existing_proposal = request.session.get('proposal_edit', [])
+    if isinstance(existing_proposal, list):
+        for existing_item in existing_proposal:
+            if isinstance(existing_item, list):
+                for nested_item in existing_item:
+                    upsert_item(nested_item, product_key='product')
+                continue
+
+            upsert_item(existing_item, product_key='product')
+
+    for item in raw_selected_products:
+        if not isinstance(item, dict):
+            continue
+
+        try:
+            product_id = int(item.get('product_id', item.get('product', 0)))
+            existing_item = proposal_by_product.get(product_id, {})
+            coefficient_value = item.get('coefficient', existing_item.get('coefficient', 0))
+            quantity_value = item.get('quantity', existing_item.get('quantity', 0))
+            coefficient = float(coefficient_value)
+            quantity = float(quantity_value)
+        except (TypeError, ValueError):
+            continue
+
+        if product_id <= 0 or quantity <= 0:
+            continue
+
+        product = Product.objects.select_related('unit').prefetch_related('categories').filter(
+            id=product_id
+        ).first()
+        if not product:
+            continue
+
+        sale_unit_price = max(0.0, float(product.sale_unit_price))
+        purchase_unit_price = max(0.0, float(product.purchase_unit_price))
+        product_total = sale_unit_price * max(0.0, coefficient) * max(0.0, quantity)
+
+        proposal_by_product[product_id] = {
+            'product': {
+                'id': product.id,
+                'designation': product.designation,
+                'category_name': _product_category_label(product),
+                'sale_unit_price': sale_unit_price,
+                'purchase_unit_price': purchase_unit_price,
+                'prix_unitaire_vente': sale_unit_price,
+                'prix_unitaire_achat': purchase_unit_price,
+                'total': product_total,
+            },
+            'coefficient': max(0.0, coefficient),
+            'quantity': max(0.0, quantity),
+            'explanation': str(item.get('explanation', existing_item.get('explanation', '')) or '').strip(),
+        }
+
+    request.session['proposal_edit'] = list(proposal_by_product.values())
+    print(request.session['proposal_edit'])
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Produits enregistrés avec succès.',
+        'proposal': request.session['proposal_edit'],
+    })
+    
+@require_GET
+@user_required
+@ensure_csrf_cookie
+def edit_proposition_page(request):
+    list_proposal= request.session.get('proposal_edit', [])
+    print(list_proposal)
+    selected_client_id_raw = request.session.get('proposal_client_id_edit')
+    try:
+        selected_client_id = int(selected_client_id_raw) if selected_client_id_raw not in (None, '') else None
+    except (TypeError, ValueError):
+        selected_client_id = None
+    proposal_date_proposition = request.session.get('proposal_date_proposition_edit', datetime.now().strftime('%Y-%m-%d'))
+    proposal_expiration_date = request.session.get('proposal_expiration_date_edit', '')
+    if not proposal_expiration_date:
+        try:
+            base_date = date.fromisoformat(str(proposal_date_proposition))
+        except (TypeError, ValueError):
+            base_date = date.today()
+            proposal_date_proposition = base_date.isoformat()
+        proposal_expiration_date = (base_date + timedelta(days=30)).isoformat()
+
+    try:
+        proposal_expiration_date_display = date.fromisoformat(str(proposal_expiration_date))
+    except (TypeError, ValueError):
+        proposal_expiration_date_display = None
+    proposal_include_tva = bool(request.session.get('proposal_include_tva_edit', True))
+    proposal_total = 0.0
+    summary_by_category = {}
+
+    if isinstance(list_proposal, list):
+        for item in list_proposal:
+            if not isinstance(item, dict):
+                continue
+
+            product = item.get('product', {})
+            category_name = ''
+            designation = ''
+            quantity = 0.0
+            coefficient = 0.0
+            sale_unit_price = 0.0
+            product_total = 0.0
+
+            if isinstance(product, dict):
+                try:
+                    category_name = str(product.get('category_name', '')).strip() or 'Non catégorisé'
+                    designation = str(product.get('designation', '')).strip()
+                    sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
+                    quantity = float(item.get('quantity', 0))
+                    coefficient = float(item.get('coefficient', 0))
+                    product_total = float(product.get('total', 0))
+                except (TypeError, ValueError):
+                    product_total = 0.0
+
+            if product_total <= 0:
+                try:
+                    quantity = float(item.get('quantity', 0))
+                    coefficient = float(item.get('coefficient', 0))
+                    sale_unit_price = 0.0
+                    if isinstance(product, dict):
+                        sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
+                    product_total = sale_unit_price * coefficient * quantity
+                except (TypeError, ValueError):
+                    product_total = 0.0
+
+            product_total = max(0.0, product_total)
+            proposal_total += product_total
+
+            if not category_name:
+                category_name = 'Non catégorisé'
+
+            if category_name not in summary_by_category:
+                summary_by_category[category_name] = {
+                    'name': category_name,
+                    'items': [],
+                    'total': 0.0,
+                }
+
+            summary_by_category[category_name]['items'].append({
+                'designation': designation,
+                'quantity': max(0.0, quantity),
+                'sale_unit_price': max(0.0, sale_unit_price),
+                'coefficient': max(0.0, coefficient),
+                'total': product_total,
+            })
+            summary_by_category[category_name]['total'] += product_total
+
+    summary_categories = list(summary_by_category.values())
+    proposal_table_rows = []
+    for category in summary_categories:
+        proposal_table_rows.append({
+            'is_category': True,
+            'category_name': category['name'],
+        })
+
+        for item in category['items']:
+            proposal_table_rows.append({
+                'is_category': False,
+                'designation': item['designation'],
+                'quantity': item['quantity'],
+                'sale_unit_price': item['sale_unit_price'],
+                'coefficient': item['coefficient'],
+                'total': item['total'],
+            })
+
+    allClient= Client.objects.all()
+    allCategory = Category.objects.all()
+    return render(
+        request, 
+        "views/editProposition.html", 
+        {
+            "clients": allClient, 
+            "categories": allCategory, 
+            "proposal": list_proposal,
+            "selected_client_id": selected_client_id,
+            "proposal_date_proposition": proposal_date_proposition,
+            "proposal_expiration_date": proposal_expiration_date,
+            "proposal_include_tva": proposal_include_tva,
+            "proposal_total": proposal_total,
+            "summary_categories": summary_categories,
+            "proposal_table_rows": proposal_table_rows,
+        }
+    )
+
+def _build_session_from_draft(request, commercial_proposal):
+    proposal_items = []
+
+    proposal_products = commercial_proposal.proposal_products.select_related('product').prefetch_related('product__categories').all()
+    for proposal_product in proposal_products:
+        proposal_items.append(_proposal_item_from_proposal_product(proposal_product))
+
+    request.session['proposal_edit'] = proposal_items
+    request.session['proposal_client_id_edit'] = commercial_proposal.client_id
+    request.session['proposal_date_proposition_edit'] = commercial_proposal.date_proposal.isoformat() if commercial_proposal.date_proposal else ''
+    if commercial_proposal.expiration_date:
+        request.session['proposal_expiration_date_edit'] = commercial_proposal.expiration_date.isoformat()
+    elif commercial_proposal.date_proposal:
+        request.session['proposal_expiration_date_edit'] = (commercial_proposal.date_proposal + timedelta(days=30)).isoformat()
+    else:
+        request.session['proposal_expiration_date_edit'] = ''
+    request.session['proposal_include_tva_edit'] = float(commercial_proposal.amount_ttc or 0) > float(commercial_proposal.amount_ht or 0)
+    request.session['proposal_draft_id'] = commercial_proposal.id
+    request.session.modified = True
 
 @require_GET
 @user_required
@@ -764,14 +1130,21 @@ def edit_draft_proposition_page(request):
     if commercial_proposal is None or commercial_proposal.state == 1:
         return redirect('propositions_page')
 
-    _build_session_from_draft(request, commercial_proposal)
-    return new_proposition_page(request)
+    if str(request.session.get('proposal_draft_id', '') or '') != proposal_id:
+        _build_session_from_draft(request, commercial_proposal)
+
+    return edit_proposition_page(request)
 
 
 @require_POST
 @user_required
 def save_draft_proposition_page(request):
     return _finalize_proposal_from_session(request, state=0, success_redirect_name='propositions_page')
+
+@require_POST
+@user_required
+def save_draft_proposition_edit_page(request):
+    return _finalize_proposal_from_edit_session(request, state=0, success_redirect_name='propositions_page')
 
 
 @require_POST
@@ -821,7 +1194,6 @@ def remove_selected_product_api(request):
         'proposal_total': _compute_proposal_total(filtered_proposal),
     })
 
-
 @require_POST
 @user_required
 def save_proposal_options_api(request):
@@ -833,7 +1205,6 @@ def save_proposal_options_api(request):
     client_id_raw = payload.get('client_id')
     date_proposition_raw = payload.get('date_proposition')
     expiration_date_raw = payload.get('expiration_date')
-    print(expiration_date_raw)
     include_tax_raw = payload.get('include_tax')
 
     client_id = None
@@ -896,6 +1267,90 @@ def save_proposal_options_api(request):
     request.session['proposal_date_proposition'] = date_proposition
     request.session['proposal_expiration_date'] = expiration_date
     request.session['proposal_include_tva'] = include_tax
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Options de la proposition enregistrées avec succès.',
+        'proposal_client_id': client_id,
+        'proposal_date_proposition': date_proposition,
+        'proposal_expiration_date': expiration_date,
+        'proposal_include_tva': include_tax,
+    })
+    
+@require_POST
+@user_required
+def save_proposal_options_edit_api(request):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Payload JSON invalide.'}, status=400)
+
+    client_id_raw = payload.get('client_id')
+    date_proposition_raw = payload.get('date_proposition')
+    expiration_date_raw = payload.get('expiration_date')
+    include_tax_raw = payload.get('include_tax')
+
+    client_id = None
+    if client_id_raw not in (None, '', 0):
+        try:
+            client_id = int(client_id_raw)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'client_id invalide.'}, status=400)
+
+        if client_id <= 0:
+            return JsonResponse({'success': False, 'message': 'client_id invalide.'}, status=400)
+
+    if date_proposition_raw in (None, ''):
+        date_proposition = ''
+    else:
+        try:
+            date_proposition = str(date_proposition_raw).strip()
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'date_proposition invalide.'}, status=400)
+
+        if len(date_proposition) != 10 or date_proposition[4] != '-' or date_proposition[7] != '-':
+            return JsonResponse({'success': False, 'message': 'Format de date invalide (YYYY-MM-DD attendu).'}, status=400)
+
+    if expiration_date_raw in (None, ''):
+        expiration_date = ''
+    else:
+        try:
+            expiration_date = str(expiration_date_raw).strip()
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'expiration_date invalide.'}, status=400)
+
+        if len(expiration_date) != 10 or expiration_date[4] != '-' or expiration_date[7] != '-':
+            return JsonResponse({'success': False, 'message': 'Format de date d\'expiration invalide (YYYY-MM-DD attendu).'}, status=400)
+
+    base_date_for_expiration = date.today()
+    if date_proposition:
+        try:
+            base_date_for_expiration = date.fromisoformat(date_proposition)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'date_proposition invalide.'}, status=400)
+
+    if not expiration_date:
+        expiration_date = (base_date_for_expiration + timedelta(days=30)).isoformat()
+    else:
+        try:
+            parsed_expiration_date = date.fromisoformat(expiration_date)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'expiration_date invalide.'}, status=400)
+
+        if parsed_expiration_date < base_date_for_expiration:
+            return JsonResponse({'success': False, 'message': "La date d'expiration ne peut pas être antérieure à la date de proposition."}, status=400)
+
+    include_tax = True
+    if isinstance(include_tax_raw, bool):
+        include_tax = include_tax_raw
+    elif include_tax_raw is not None:
+        include_tax = str(include_tax_raw).strip().lower() in ('1', 'true', 'yes', 'on')
+
+    request.session['proposal_client_id_edit'] = client_id
+    request.session['proposal_date_proposition_edit'] = date_proposition
+    request.session['proposal_expiration_date_edit'] = expiration_date
+    request.session['proposal_include_tva_edit'] = include_tax
     request.session.modified = True
 
     return JsonResponse({
@@ -1163,6 +1618,144 @@ def appercu_proposition_page(request):
             'selected_client': selected_client,
             'proposal_date_proposition': proposal_date_proposition,
             'proposal_expiration_date': proposal_expiration_date_display,
+            'commercial' : request.user,
+        }
+    )
+    
+@require_GET
+@user_required
+def appercu_proposition_page_edit(request):
+    proposal_id = request.GET.get('proposal_id', '').strip()
+    client_id = request.GET.get('client_id', '').strip()
+    query_date_proposition = request.GET.get('date_proposition', '').strip()
+    query_expiration_date = request.GET.get('expiration_date', '').strip()
+    query_include_tva = request.GET.get('include_tva', '').strip().lower()
+
+    if query_date_proposition:
+        try:
+            date.fromisoformat(query_date_proposition)
+            request.session['proposal_date_proposition_edit'] = query_date_proposition
+        except (TypeError, ValueError):
+            pass
+
+    if query_expiration_date:
+        try:
+            date.fromisoformat(query_expiration_date)
+            request.session['proposal_expiration_date_edit'] = query_expiration_date
+        except (TypeError, ValueError):
+            pass
+
+    if query_include_tva in ('1', 'true', 'yes', 'on'):
+        request.session['proposal_include_tva_edit'] = True
+    elif query_include_tva in ('0', 'false', 'no', 'off'):
+        request.session['proposal_include_tva_edit'] = False
+
+    if client_id:
+        try:
+            request.session['proposal_client_id_edit'] = int(client_id)
+        except (TypeError, ValueError):
+            pass
+
+    if not client_id:
+        session_client_id = request.session.get('proposal_client_id_edit')
+        client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
+
+    proposal_date_proposition = request.session.get('proposal_date_proposition_edit', '')
+    proposal_expiration_date = request.session.get('proposal_expiration_date_edit', '')
+    if not proposal_date_proposition:
+        proposal_date_proposition = date.today().isoformat()
+
+    if not proposal_expiration_date:
+        try:
+            base_date = date.fromisoformat(str(proposal_date_proposition))
+        except (TypeError, ValueError):
+            base_date = date.today()
+            proposal_date_proposition = base_date.isoformat()
+        proposal_expiration_date = (base_date + timedelta(days=30)).isoformat()
+
+    try:
+        proposal_expiration_date_display = date.fromisoformat(str(proposal_expiration_date))
+    except (TypeError, ValueError):
+        proposal_expiration_date_display = None
+
+    include_tva = bool(request.session.get('proposal_include_tva_edit', True))
+    list_proposal = request.session.get('proposal_edit', [])
+
+    proposal_total = 0.0
+    summary_by_category = {}
+
+    if isinstance(list_proposal, list):
+        for item in list_proposal:
+            if not isinstance(item, dict):
+                continue
+
+            product = item.get('product', {})
+            category_name = 'Non catégorisé'
+            designation = ''
+            quantity = 0.0
+            coefficient = 0.0
+            sale_unit_price = 0.0
+            product_total = 0.0
+            explanation = str(item.get('explanation', '')).strip()
+
+            if isinstance(product, dict):
+                try:
+                    category_name = str(product.get('category_name', '')).strip() or 'Non catégorisé'
+                    designation = str(product.get('designation', '')).strip()
+                    quantity = float(item.get('quantity', 0))
+                    coefficient = float(item.get('coefficient', 0))
+                    sale_unit_price = float(product.get('sale_unit_price', product.get('prix_unitaire_vente', 0)))
+                    product_total = float(product.get('total', 0))
+                except (TypeError, ValueError):
+                    product_total = 0.0
+
+            if product_total <= 0:
+                product_total = max(0.0, sale_unit_price) * max(0.0, coefficient) * max(0.0, quantity)
+
+            product_total = max(0.0, product_total)
+            proposal_total += product_total
+
+            if category_name not in summary_by_category:
+                summary_by_category[category_name] = {
+                    'name': category_name,
+                    'items': [],
+                    'total': 0.0,
+                }
+
+            summary_by_category[category_name]['items'].append({
+                'designation': designation,
+                'quantity': max(0.0, quantity),
+                'sale_unit_price': max(0.0, sale_unit_price),
+                'coefficient': max(0.0, coefficient),
+                'total': product_total,
+                'explanation': explanation,
+            })
+            summary_by_category[category_name]['total'] += product_total
+
+    summary_categories = list(summary_by_category.values())
+    tva_amount = proposal_total * 0.2 if include_tva else 0.0
+    total_ttc = proposal_total + tva_amount
+
+    selected_client = None
+    if client_id:
+        try:
+            selected_client = Client.objects.filter(id=int(client_id)).first()
+        except (TypeError, ValueError):
+            selected_client = None
+
+    return render(
+        request, 
+        "views/preview-proposition-edit.html",
+        {
+            'proposal_id': proposal_id,
+            'summary_categories': summary_categories,
+            'proposal_total': proposal_total,
+            'tva_amount': tva_amount,
+            'total_ttc': total_ttc,
+            'include_tva': include_tva,
+            'selected_client': selected_client,
+            'proposal_date_proposition': proposal_date_proposition,
+            'proposal_expiration_date': proposal_expiration_date_display,
         }
     )
 
@@ -1171,6 +1764,11 @@ def appercu_proposition_page(request):
 @user_required
 def validate_proposition_page(request):
     return _finalize_proposal_from_session(request, state=1, success_redirect_name='new_proposition_page')
+
+@require_GET
+@user_required
+def validate_proposition_edit_page(request):
+    return _finalize_proposal_from_edit_session(request, state=1, success_redirect_name='new_proposition_page')
 
 @require_GET
 @user_required
