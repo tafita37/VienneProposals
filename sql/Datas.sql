@@ -17,6 +17,9 @@ INSERT INTO unit (name) VALUES
 ('pot'),
 ('m');
 
+insert into admin_users (password, last_login, id, username, first_name, last_name, email) values(
+'pbkdf2_sha256$1000000$N6AgkWkdPQ5n5SyN4ZeSpi$VBYnnahoZjJDAmfxvFvzfHvdKeaPLQAsffhCHxb9fYA=', '2026-04-13 17:08:43.36359+03', 1, 'admin', 'Ny Aina', 'Ny Aina', 'taf.rand37@gmail.com');
+
 INSERT INTO product (designation, purchase_unit_price, sale_unit_price, coefficient, unit_id, category_id) VALUES
 ('Porte battante XL - Finition Chêne', 450, 585, 1, 1, 1),
 ('Porte battante XL - Finition Blanc', 420, 546, 1, 1, 1),
