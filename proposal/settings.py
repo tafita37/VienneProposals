@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     'authentification',
     'commercial',
 ]
@@ -161,6 +162,10 @@ AUTHENTICATION_BACKENDS = [
 USE_L10N = True
 USE_THOUSAND_SEPARATOR = True
 
+ANYMAIL = {
+    "BREVO_API_KEY": os.getenv('BREVO_API_KEY'),  # ou os.getenv('BREVO_API_KEY')
+    "IGNORE_RECIPIENT_STATUS": True,  # optionnel : évite les erreurs sur destinataires invalides [citation:3]
+}
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
