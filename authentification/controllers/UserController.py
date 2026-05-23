@@ -69,7 +69,7 @@ def login_admin_page(request):
 def login_user(request):
     username = request.POST.get('username')
     password = request.POST.get('password')
-    if username is None or password is None:
+    if username is None or password is None or username.strip() == '' or password.strip() == '':
         messages.error(request, "Veuillez saisir votre nom d'utilisateur et un mot de passe")
         return redirect('login_user_page')
     user = authenticate(
@@ -89,7 +89,7 @@ def login_user(request):
 def login_admin(request):
     username = request.POST.get('username')
     password = request.POST.get('password')
-    if username is None or password is None:
+    if username is None or password is None or username.strip() == '' or password.strip() == '':
         messages.error(request, "Veuillez saisir votre nom d'utilisateur et un mot de passe")
         return redirect('login_admin_page')
     backend = AdminUserBackend()
