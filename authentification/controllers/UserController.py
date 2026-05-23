@@ -52,7 +52,7 @@ def _read_password_token(token, expected_account_type, expected_purpose):
 @require_GET
 def login_user_page(request):
     if request.user.is_authenticated and isinstance(request.user, User):
-        return redirect('catalogue_page')  # Redirige si déjà connecté
+        return redirect('dashboard_user_page')  # Redirige si déjà connecté
     if request.user.is_authenticated and isinstance(request.user, AdminUser):
         return redirect('dashboard_page')
     return render(request, "views/login_user.html")
@@ -62,7 +62,7 @@ def login_admin_page(request):
     if request.user.is_authenticated and isinstance(request.user, AdminUser):
         return redirect('dashboard_page')  # Redirige si déjà connecté
     if request.user.is_authenticated and isinstance(request.user, User):
-        return redirect('catalogue_page')
+        return redirect('dashboard_user_page')
     return render(request, "views/login_admin.html")
 
 @require_POST
