@@ -67,10 +67,15 @@ def login_admin_page(request):
 
 @require_POST
 def login_user(request):
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    if username is None or password is None:
+        messages.error(request, "Veuillez saisir votre nom d'utilisateur et un mot de passe")
+        return redirect('login_user_page')
     user = authenticate(
         request,
-        username = request.POST.get('username'),
-        password = request.POST.get('password'),
+        username = username,
+        password = password,
         backend='django.contrib.auth.backends.ModelBackend'
     )
     if user and isinstance(user, User):
@@ -80,15 +85,18 @@ def login_user(request):
         messages.error(request, "Nom d’utilisateur ou mot de passe incorrect")
         return redirect('login_user_page')
     
-
-    
 @require_POST
 def login_admin(request):
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    if username is None or password is None:
+        messages.error(request, "Veuillez saisir votre nom d'utilisateur et un mot de passe")
+        return redirect('login_admin_page')
     backend = AdminUserBackend()
     user = backend.authenticate(
         request,
-        username = request.POST.get('username'),
-        password = request.POST.get('password')
+        username = username,
+        password = password
     )
     if user:
         login(request, user, backend='authentification.backends.AdminUserBackend')
