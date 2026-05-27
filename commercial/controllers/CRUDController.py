@@ -148,23 +148,24 @@ def save_client(request):
         'phone': phone
     }
     
-    if is_company:
-        company = Company(
-            name=company_name,
-            registration_number=registration_number,
-            tax_identification_number=tax_identification_number,
-            created_at=created_at,
-            company_type=CompanyType(id=company_type)
-        )
-        company.save(client_data=client_data)
-    else:
-        individual = Individual(
-            first_name=first_name,
-            last_name=last_name,
-            birth_date=birth_date,
-            id_card_number=id_card_number
-        )
-        individual.save(client_data=client_data)
+    with transaction.atomic():
+        if is_company:
+            company = Company(
+                name=company_name,
+                registration_number=registration_number,
+                tax_identification_number=tax_identification_number,
+                created_at=created_at,
+                company_type=CompanyType(id=company_type)
+            )
+            company.save(client_data=client_data)
+        else:
+            individual = Individual(
+                first_name=first_name,
+                last_name=last_name,
+                birth_date=birth_date,
+                id_card_number=id_card_number
+            )
+            individual.save(client_data=client_data)
     
     return redirect('liste_client_page')
 
