@@ -154,7 +154,7 @@ def save_client(request):
             registration_number=registration_number,
             tax_identification_number=tax_identification_number,
             created_at=created_at,
-            company_type_id=CompanyType(id=company_type)
+            company_type=CompanyType(id=company_type)
         )
         company.save(client_data=client_data)
     else:
