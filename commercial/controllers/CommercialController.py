@@ -981,7 +981,6 @@ def save_selected_products_edit_api(request):
 @ensure_csrf_cookie
 def edit_proposition_page(request):
     list_proposal= request.session.get('proposal_edit', [])
-    print(list_proposal)
     selected_client_id_raw = request.session.get('proposal_client_id_edit')
     try:
         selected_client_id = int(selected_client_id_raw) if selected_client_id_raw not in (None, '') else None
@@ -1625,7 +1624,7 @@ def appercu_proposition_page(request):
 @require_GET
 @user_required
 def appercu_proposition_page_edit(request):
-    proposal_id = request.GET.get('proposal_id', '').strip()
+    proposal_id = request.session.get('proposal_draft_id', '')
     client_id = request.GET.get('client_id', '').strip()
     query_date_proposition = request.GET.get('date_proposition', '').strip()
     query_expiration_date = request.GET.get('expiration_date', '').strip()
@@ -1756,6 +1755,7 @@ def appercu_proposition_page_edit(request):
             'selected_client': selected_client,
             'proposal_date_proposition': proposal_date_proposition,
             'proposal_expiration_date': proposal_expiration_date_display,
+            'commercial' : request.user
         }
     )
 
