@@ -199,6 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientSelect = document.getElementById('clientSelect');
     const editClientBtn = document.getElementById('editClientBtn');
     const saveClientBtn = document.getElementById('saveClientBtn');
+    const projectNameInput = document.getElementById('projectName');
+    const installationAddressInput = document.getElementById('installationAddress');  
     const dateProposalInput = document.getElementById('dateProposal');
     const expirationDateInput = document.getElementById('expirationDate');
     const includeTaxInput = document.getElementById('includeTax');
@@ -705,6 +707,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientId = clientSelect ? clientSelect.value : '';
         const dateProposition = dateProposalInput ? dateProposalInput.value : '';
         const expirationDate = expirationDateInput ? expirationDateInput.value : '';
+        const projectName = projectNameInput ? projectNameInput.value : '';
+        const installationAddress = installationAddressInput ? installationAddressInput.value : '';
         
         const includeTax = includeTaxInput ? includeTaxInput.checked : true;
 
@@ -716,6 +720,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify({
                 client_id: clientId || null,
+                project_name: projectName || '',
+                installation_address: installationAddress || '',
                 date_proposition: dateProposition || '',
                 expiration_date: expirationDate || '',
                 include_tax: includeTax,
@@ -1053,6 +1059,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dateProposition = dateProposalInput ? String(dateProposalInput.value || '').trim() : '';
                 const expirationDate = expirationDateInput ? String(expirationDateInput.value || '').trim() : '';
                 const includeTax = includeTaxInput ? includeTaxInput.checked : true;
+                const projectName = projectNameInput ? String(projectNameInput.value || '').trim() : '';
+                const installationAddress = installationAddressInput ? String(installationAddressInput.value || '').trim() : '';
 
                 if (clientId) {
                     previewUrl.searchParams.set('client_id', clientId);
@@ -1064,6 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     previewUrl.searchParams.set('expiration_date', expirationDate);
                 }
                 previewUrl.searchParams.set('include_tva', includeTax ? '1' : '0');
+                previewUrl.searchParams.set('project_name', projectName || '');
+                previewUrl.searchParams.set('installation_address', installationAddress || '');
 
                 linkElement.style.pointerEvents = 'none';
 
