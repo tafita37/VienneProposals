@@ -4,6 +4,8 @@ from authentification.metier.User import User
 
 class CommercialProposal(models.Model):
 	id = models.AutoField(primary_key=True)
+	project_name=models.CharField(max_length=100, unique=True)
+	installation_address=models.CharField(max_length=100, unique=True)
 	date_proposal = models.DateField()
 	amount_ht = models.FloatField()  # DOUBLE PRECISION en SQL
 	amount_ttc = models.FloatField()  # DOUBLE PRECISION en SQL

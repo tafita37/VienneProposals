@@ -106,6 +106,8 @@ CREATE TABLE company(
 
 CREATE TABLE commercial_proposal(
    id SERIAL,
+   project_name VARCHAR(100)  NOT NULL UNIQUE, -- Ajouter
+   installation_address VARCHAR(100)  NOT NULL UNIQUE, -- Ajouter
    date_proposal DATE NOT NULL,
    amount_ht DOUBLE PRECISION NOT NULL,
    amount_ttc DOUBLE PRECISION NOT NULL,

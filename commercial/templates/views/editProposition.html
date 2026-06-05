@@ -108,6 +108,16 @@
     <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
         <h3>Options</h3>
         <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Nom du projet</label>
+            <input type="text" id="projectName" placeholder="Nom du projet"
+                style="max-width: 100%; margin-right: 0.75rem;" value="{{ proposal_project_name }}">
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Adresse d'installation</label>
+            <input type="text" id="installationAddress" placeholder="Adresse d'installation"
+                style="max-width: 100%; margin-right: 0.75rem;" value="{{ proposal_installation_address }}">
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
             <label>Date de proposition</label>
             <input type="date" id="dateProposal"
                 value="{{ proposal_date_proposition }}"
