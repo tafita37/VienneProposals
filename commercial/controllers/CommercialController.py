@@ -396,7 +396,17 @@ def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
 
         ProposalProduct.objects.bulk_create(proposal_product_objects)
 
-    for session_key in ('proposal_edit', 'proposal_client_id_edit', 'proposal_date_proposition_edit', 'proposal_expiration_date_edit', 'proposal_include_tva_edit', 'proposal_draft_id', 'proposal_project_name_edit', 'proposal_installation_address_edit'):
+    for session_key in (
+                        'proposal_edit', 
+                        'proposal_client_id_edit', 
+                        'proposal_date_proposition_edit', 
+                        'proposal_expiration_date_edit', 
+                        'proposal_include_tva_edit', 
+                        'proposal_draft_id', 
+                        'proposal_project_name_edit', 
+                        'proposal_installation_address_edit', 
+                        'proposal_commercial_proposal_number_edit'
+                    ):
         if session_key in request.session:
             del request.session[session_key]
     request.session.modified = True
@@ -1118,7 +1128,8 @@ def _build_session_from_draft(request, commercial_proposal):
     proposal_products = commercial_proposal.proposal_products.select_related('product').prefetch_related('product__categories').all()
     for proposal_product in proposal_products:
         proposal_items.append(_proposal_item_from_proposal_product(proposal_product))
-        
+       
+    request.session['proposal_commercial_proposal_number_edit'] = commercial_proposal.commercial_proposal_number or ''
     request.session['proposal_project_name_edit'] = commercial_proposal.project_name or ''
     request.session['proposal_installation_address_edit'] = commercial_proposal.installation_address or ''
     request.session['proposal_edit'] = proposal_items
@@ -1789,6 +1800,7 @@ def appercu_proposition_page_edit(request):
             'proposal_id': proposal_id,
             'project_name': request.session.get('proposal_project_name_edit', ''),
             'installation_address': request.session.get('proposal_installation_address_edit', ''),
+            "proposal_commercial_proposal_number": request.session.get('proposal_commercial_proposal_number_edit', ''),
             'summary_categories': summary_categories,
             'proposal_total': proposal_total,
             'tva_amount': tva_amount,
