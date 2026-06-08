@@ -272,6 +272,10 @@
     .footer strong {
       color: black;
     }
+
+    tbody.item-group {
+      page-break-inside: avoid;
+    }
   </style>
 </head>
 
@@ -321,7 +325,7 @@
         </div>
       </div>
 
-      <div>
+      <div style="background-image: url('{% static 'img/logo_mini_pdf.png' %}'); background-repeat: no-repeat; background-position: center; background-size: contain; padding: 20px 0;">
         <div class="estimatif-title">Estimatif Projet</div>
         <div class="estimatif-sub">Valable 6 mois</div>
 
@@ -337,24 +341,26 @@
             {% if summary_categories %}
             {% for category in summary_categories %}
               <tr class="section-row">
-                <td colspan="3">{{ category.name }}</td>
-              </tr>
-              {% for item in category.items %}
-                <tr class="item-row">
-                  <td>{{ item.designation }}</td>
-                  <td>{{ item.quantity|floatformat:2 }}</td>
-                  <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
-                </tr>
-                {% if item.explanation %}
-                <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
-                  <td colspan="5" style="padding: 1rem;">
-                    <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
-                      <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
-                    </div>
-                  </td>
-                </tr>
-                {% endif %}
-              {% endfor %}
+  <td colspan="3">{{ category.name }}</td>
+</tr>
+{% for item in category.items %}
+  <tbody class="item-group">
+    <tr class="item-row">
+      <td>{{ item.designation }}</td>
+      <td>{{ item.quantity|floatformat:2 }}</td>
+      <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
+    </tr>
+    {% if item.explanation %}
+    <tr style="border-bottom: 2px solid #e0e0e0;">
+      <td colspan="5" style="padding: 1rem;">
+        <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
+          <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
+        </div>
+      </td>
+    </tr>
+    {% endif %}
+  </tbody>
+{% endfor %}
               <tr class="subtotal-row">
                   <td colspan="2">Sous-total {{ category.name }}</td>
                   <td>{{ category.total|floatformat:2 }}&nbsp;€</td>
