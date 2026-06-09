@@ -1,8 +1,8 @@
 ﻿/* Styles spécifiques: preview-proposition */
 
-:root {
+
+/* :root {
     --primary-dark: #499581;
-    /* --primary-dark: #2c3e50; */
     --primary-light: #f5f3f0;
     --accent: #0d7377;
     --accent-light: #14a085;
@@ -12,7 +12,7 @@
     --success: #27ae60;
     --warning: #f39c12;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+} */
 
 .preview-document {
 	background: white;

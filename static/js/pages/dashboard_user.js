@@ -160,8 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: 'Marge brute mensuelle (Ar)',
                         data: values,
-                        backgroundColor: 'rgba(13, 115, 119, 0.65)',
-                        borderColor: 'rgba(13, 115, 119, 1)',
+                        // backgroundColor: 'rgba(13, 115, 119, 0.65)',
+                        backgroundColor: 'rgba(148, 192, 61, 0.65)',
+                        // borderColor: 'rgba(13, 115, 119, 1)',
+                        borderColor: 'rgba(148, 192, 61, 1)',
                         borderWidth: 1,
                         borderRadius: 6,
                         maxBarThickness: 34,
