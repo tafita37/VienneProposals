@@ -118,6 +118,14 @@
                 style="max-width: 100%; margin-right: 0.75rem;" value="{{ proposal_installation_address }}">
         </div>
         <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Non Compris</label>
+            <textarea name="no_included" id="no_included" rows="10">{{ no_included }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Condition général de Vente</label>
+            <textarea name="cgv" id="cgv" rows="3">{{ cgv }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
             <label>Date de proposition</label>
             <input type="date" id="dateProposal"
                 value="{{ proposal_date_proposition }}"
@@ -137,7 +145,7 @@
             </label>
         </div>
         <div>
-            <a href="{% url 'appercu_proposition_page' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
+            <a href="{% url 'appercu_proposition_page_edit' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
                 Proposition</a>
         </div>
     </div>

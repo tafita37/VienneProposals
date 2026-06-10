@@ -65,6 +65,8 @@ def proposition_pdf(request, pk):
     include_tva = float(proposal.amount_ttc or 0) > float(proposal.amount_ht or 0)
     tva_amount = proposal_total * 0.2 if include_tva else 0.0
     total_ttc = proposal_total + tva_amount
+    no_included = proposal.no_included.replace('- ', '').split('\\n')
+    cgv=proposal.cgv.replace('- ', '').split('\\n')
 
     context = {
         'proposal': proposal,
@@ -73,6 +75,8 @@ def proposition_pdf(request, pk):
         'tva_amount': tva_amount,
         'total_ttc': total_ttc,
         'include_tva': include_tva,
+        'no_included': no_included,
+        'cgv': cgv,
     }
 
     # Génération du PDF principal (page 1)

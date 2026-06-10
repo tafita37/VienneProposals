@@ -201,6 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveClientBtn = document.getElementById('saveClientBtn');
     const projectNameInput = document.getElementById('projectName');
     const installationAddressInput = document.getElementById('installationAddress');    
+    const noIncludedInput = document.getElementById('no_included');    
+    const cgvInput = document.getElementById('cgv');
     const dateProposalInput = document.getElementById('dateProposal');
     const expirationDateInput = document.getElementById('expirationDate');
     const includeTaxInput = document.getElementById('includeTax');
@@ -707,6 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const expirationDate = expirationDateInput ? expirationDateInput.value : '';
         const projectName = projectNameInput ? projectNameInput.value : '';
         const installationAddress = installationAddressInput ? installationAddressInput.value : '';
+        const noIncluded = noIncludedInput ? noIncludedInput.value : '';
+        const cgv = cgvInput ? cgvInput.value : '';
 
         const includeTax = includeTaxInput ? includeTaxInput.checked : true;
 
@@ -723,6 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 date_proposition: dateProposition || '',
                 expiration_date: expirationDate || '',
                 include_tax: includeTax,
+                no_included: noIncluded,
+                cgv: cgv,
             }),
         });
 
@@ -1059,19 +1065,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const includeTax = includeTaxInput ? includeTaxInput.checked : true;
                 const projectName = projectNameInput ? String(projectNameInput.value || '').trim() : '';
                 const installationAddress = installationAddressInput ? String(installationAddressInput.value || '').trim() : '';
-
-                if (clientId) {
-                    previewUrl.searchParams.set('client_id', clientId);
-                }
-                if (dateProposition) {
-                    previewUrl.searchParams.set('date_proposition', dateProposition);
-                }
-                if (expirationDate) {
-                    previewUrl.searchParams.set('expiration_date', expirationDate);
-                }
-                previewUrl.searchParams.set('include_tva', includeTax ? '1' : '0');
-                previewUrl.searchParams.set('project_name', projectName || '');
-                previewUrl.searchParams.set('installation_address', installationAddress || '');
 
                 linkElement.style.pointerEvents = 'none';
 

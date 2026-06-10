@@ -177,6 +177,9 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
     draft_id_raw = request.session.get('proposal_draft_id')
     project_name = request.session.get('proposal_project_name', '')
     installation_address = request.session.get('proposal_installation_address', '')
+    no_included=request.session.get('proposal_no_included', '')
+    cgv=request.session.get('proposal_cgv', '')
+    
 
     if not isinstance(session_proposal, list) or len(session_proposal) == 0:
         return redirect('appercu_proposition_page')
@@ -244,7 +247,9 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
             commercial_proposal.client = selected_client
             commercial_proposal.commercial = request.user
             commercial_proposal.state = state
-            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state'])
+            commercial_proposal.no_included = no_included
+            commercial_proposal.cgv = cgv
+            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state', 'no_included', 'cgv'])
             commercial_proposal.proposal_products.all().delete()
         else:
             commercial_proposal = CommercialProposal.objects.create(
@@ -257,6 +262,8 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
                 state=state,
                 project_name=project_name,
                 installation_address=installation_address,
+                no_included=no_included,
+                cgv=cgv,
             )
 
         proposal_product_objects = []
@@ -276,7 +283,18 @@ def _finalize_proposal_from_session(request, state, success_redirect_name):
 
         ProposalProduct.objects.bulk_create(proposal_product_objects)
 
-    for session_key in ('proposal', 'proposal_client_id', 'proposal_date_proposition', 'proposal_expiration_date', 'proposal_include_tva', 'proposal_draft_id', 'proposal_project_name', 'proposal_installation_address'):
+    for session_key in (
+        'proposal', 
+        'proposal_client_id', 
+        'proposal_date_proposition', 
+        'proposal_expiration_date', 
+        'proposal_include_tva', 
+        'proposal_draft_id',
+        'proposal_project_name', 
+        'proposal_installation_address', 
+        'proposal_no_included', 
+        'proposal_cgv'
+    ):
         if session_key in request.session:
             del request.session[session_key]
     request.session.modified = True
@@ -297,6 +315,8 @@ def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
     draft_id_raw = request.session.get('proposal_draft_id')
     project_name = request.session.get('proposal_project_name_edit', '')
     installation_address = request.session.get('proposal_installation_address_edit', '')
+    no_included=request.session.get('proposal_no_included_edit', '')
+    cgv=request.session.get('proposal_cgv_edit', '')
 
     if not isinstance(session_proposal, list) or len(session_proposal) == 0:
         return redirect('appercu_proposition_page')
@@ -364,7 +384,9 @@ def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
             commercial_proposal.installation_address = installation_address
             commercial_proposal.commercial = request.user
             commercial_proposal.state = state
-            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state', 'project_name', 'installation_address'])
+            commercial_proposal.no_included = no_included
+            commercial_proposal.cgv = cgv
+            commercial_proposal.save(update_fields=['date_proposal', 'expiration_date', 'amount_ht', 'amount_ttc', 'client', 'commercial', 'state', 'project_name', 'installation_address', 'no_included', 'cgv'])
             commercial_proposal.proposal_products.all().delete()
         else:
             commercial_proposal = CommercialProposal.objects.create(
@@ -377,6 +399,8 @@ def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
                 installation_address=installation_address,
                 commercial=request.user,
                 state=state,
+                no_included=no_included,
+                cgv=cgv,
             )
 
         proposal_product_objects = []
@@ -405,7 +429,9 @@ def _finalize_proposal_from_edit_session(request, state, success_redirect_name):
                         'proposal_draft_id', 
                         'proposal_project_name_edit', 
                         'proposal_installation_address_edit', 
-                        'proposal_commercial_proposal_number_edit'
+                        'proposal_commercial_proposal_number_edit',
+                        'proposal_no_included_edit',
+                        'proposal_cgv_edit'
                     ):
         if session_key in request.session:
             del request.session[session_key]
@@ -1103,6 +1129,8 @@ def edit_proposition_page(request):
 
     allClient= Client.objects.all()
     allCategory = Category.objects.all()
+    no_included = eval('"' + request.session.get('proposal_no_included_edit', '') + '"')
+    cgv = eval('"' + request.session.get('proposal_cgv_edit', '') + '"')
     return render(
         request, 
         "views/editProposition.html", 
@@ -1119,6 +1147,8 @@ def edit_proposition_page(request):
             "proposal_installation_address": request.session.get('proposal_installation_address_edit', ''),
             "summary_categories": summary_categories,
             "proposal_table_rows": proposal_table_rows,
+            "no_included": no_included,
+            "cgv": cgv,
         }
     )
 
@@ -1143,6 +1173,8 @@ def _build_session_from_draft(request, commercial_proposal):
         request.session['proposal_expiration_date_edit'] = ''
     request.session['proposal_include_tva_edit'] = float(commercial_proposal.amount_ttc or 0) > float(commercial_proposal.amount_ht or 0)
     request.session['proposal_draft_id'] = commercial_proposal.id
+    request.session['proposal_no_included_edit'] = commercial_proposal.no_included or ''
+    request.session['proposal_cgv_edit'] = commercial_proposal.cgv or ''
     request.session.modified = True
 
 @require_GET
@@ -1234,6 +1266,8 @@ def save_proposal_options_api(request):
     include_tax_raw = payload.get('include_tax')
     project_name_raw = payload.get('project_name')
     installation_address_raw = payload.get('installation_address')
+    no_included_raw = repr(payload.get('no_included')).strip('"')
+    cgv_raw = repr(payload.get('cgv')).strip('"')
 
     client_id = None
     if client_id_raw not in (None, '', 0):
@@ -1297,6 +1331,8 @@ def save_proposal_options_api(request):
     request.session['proposal_include_tva'] = include_tax
     request.session['proposal_project_name'] = project_name_raw.strip() if isinstance(project_name_raw, str) else ''
     request.session['proposal_installation_address'] = installation_address_raw.strip() if isinstance(installation_address_raw, str) else ''
+    request.session['proposal_no_included'] = no_included_raw.strip('"') if isinstance(no_included_raw, str) else ''
+    request.session['proposal_cgv'] = cgv_raw.strip('"') if isinstance(cgv_raw, str) else ''
     request.session.modified = True
 
     return JsonResponse({
@@ -1322,6 +1358,8 @@ def save_proposal_options_edit_api(request):
     include_tax_raw = payload.get('include_tax')
     project_name_raw = payload.get('project_name')
     installation_address_raw = payload.get('installation_address')
+    no_included_raw = repr(payload.get('no_included')).strip('"')
+    cgv_raw = repr(payload.get('cgv')).strip('"')
     
 
     client_id = None
@@ -1386,6 +1424,8 @@ def save_proposal_options_edit_api(request):
     request.session['proposal_include_tva_edit'] = include_tax
     request.session['proposal_project_name_edit'] = project_name_raw.strip() if isinstance(project_name_raw, str) else ''
     request.session['proposal_installation_address_edit'] = installation_address_raw.strip() if isinstance(installation_address_raw, str) else ''
+    request.session['proposal_no_included_edit'] = no_included_raw.strip('"') if isinstance(no_included_raw, str) else ''
+    request.session['proposal_cgv_edit'] = cgv_raw.strip('"') if isinstance(cgv_raw, str) else ''
     request.session.modified = True
 
     return JsonResponse({
@@ -1501,6 +1541,24 @@ def new_proposition_page(request):
                 'coefficient': item['coefficient'],
                 'total': item['total'],
             })
+    if not request.session.get('proposal_no_included'):
+        not_included = """- Alarmes, et Vidéo Surveillance
+- Prestations Informatiques et téléphoniques (sauf câblage)
+- Démarches auprès des concessionnaires (eau, électricité, téléphonie) (Les arrivées électricité, télécom et eau sont supposées être en attente dans la cellule.)
+- Spécificités Incendie particulières (extincteurs, alarme incendie...)
+- Honoraires d'un éventuel bureau de contrôle, et du SPS
+- Toute prestation : de gros œuvre de pérennité dans les murs, toiture et dalle béton. sur le mobilier et agencement (Devis ArchiBô) en extérieur (toiture, façade, enseignes etc.) sur les Menuiseries extérieures"""
+    else:        
+        not_included='"'+request.session.get('proposal_no_included', '')+'"'
+        not_included=eval(not_included)
+        
+    if not request.session.get('proposal_cgv'):
+        cgv = """- 40% d'acompte à la signature
+- 40% d'acompte à la situation travaux
+- 20% d'acompte à la levée des réserves"""
+    else:        
+        cgv='"'+request.session.get('proposal_cgv', '')+'"'
+        cgv=eval(cgv)
 
     allClient= Client.objects.all()
     allCategory = Category.objects.all()
@@ -1520,53 +1578,16 @@ def new_proposition_page(request):
             "proposal_table_rows": proposal_table_rows,
             "proposal_project_name": proposal_project_name,
             "proposal_installation_address": proposal_installation_address,
+            "not_included": not_included,
+            "cgv": cgv,
         }
     )
     
 @require_GET
 @user_required
 def appercu_proposition_page(request):
-    project_name = request.GET.get('project_name', '').strip()
-    installation_address = request.GET.get('installation_address', '').strip()
-    proposal_id = request.GET.get('proposal_id', '').strip()
-    client_id = request.GET.get('client_id', '').strip()
-    query_date_proposition = request.GET.get('date_proposition', '').strip()
-    query_expiration_date = request.GET.get('expiration_date', '').strip()
-    query_include_tva = request.GET.get('include_tva', '').strip().lower()
-    
-    if project_name:
-        request.session['proposal_project_name'] = project_name
-    if installation_address:
-        request.session['proposal_installation_address'] = installation_address
-
-    if query_date_proposition:
-        try:
-            date.fromisoformat(query_date_proposition)
-            request.session['proposal_date_proposition'] = query_date_proposition
-        except (TypeError, ValueError):
-            pass
-
-    if query_expiration_date:
-        try:
-            date.fromisoformat(query_expiration_date)
-            request.session['proposal_expiration_date'] = query_expiration_date
-        except (TypeError, ValueError):
-            pass
-
-    if query_include_tva in ('1', 'true', 'yes', 'on'):
-        request.session['proposal_include_tva'] = True
-    elif query_include_tva in ('0', 'false', 'no', 'off'):
-        request.session['proposal_include_tva'] = False
-
-    if client_id:
-        try:
-            request.session['proposal_client_id'] = int(client_id)
-        except (TypeError, ValueError):
-            pass
-
-    if not client_id:
-        session_client_id = request.session.get('proposal_client_id')
-        client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
+    session_client_id = request.session.get('proposal_client_id')
+    client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
 
     proposal_date_proposition = request.session.get('proposal_date_proposition', '')
     proposal_expiration_date = request.session.get('proposal_expiration_date', '')
@@ -1650,12 +1671,13 @@ def appercu_proposition_page(request):
             selected_client = Client.objects.filter(id=int(client_id)).first()
         except (TypeError, ValueError):
             selected_client = None
+    no_included = request.session.get('proposal_no_included', '').replace('- ', '').split('\\n')
+    cgv=request.session['proposal_cgv'].replace('- ', '').split('\\n')
 
     return render(
         request, 
         "views/preview-proposition.html",
         {
-            'proposal_id': proposal_id,
             'project_name': request.session.get('proposal_project_name', ''),
             'installation_address': request.session.get('proposal_installation_address', ''),
             'summary_categories': summary_categories,
@@ -1667,48 +1689,16 @@ def appercu_proposition_page(request):
             'proposal_date_proposition': proposal_date_proposition,
             'proposal_expiration_date': proposal_expiration_date_display,
             'commercial' : request.user,
+            'no_included': no_included,
+            'cgv': cgv,
         }
     )
     
 @require_GET
 @user_required
 def appercu_proposition_page_edit(request):
-    project_name = request.GET.get('project_name', '').strip()
-    installation_address = request.GET.get('installation_address', '').strip()
-    proposal_id = request.session.get('proposal_draft_id', '')
-    client_id = request.GET.get('client_id', '').strip()
-    query_date_proposition = request.GET.get('date_proposition', '').strip()
-    query_expiration_date = request.GET.get('expiration_date', '').strip()
-    query_include_tva = request.GET.get('include_tva', '').strip().lower()
-
-    if query_date_proposition:
-        try:
-            date.fromisoformat(query_date_proposition)
-            request.session['proposal_date_proposition_edit'] = query_date_proposition
-        except (TypeError, ValueError):
-            pass
-
-    if query_expiration_date:
-        try:
-            date.fromisoformat(query_expiration_date)
-            request.session['proposal_expiration_date_edit'] = query_expiration_date
-        except (TypeError, ValueError):
-            pass
-
-    if query_include_tva in ('1', 'true', 'yes', 'on'):
-        request.session['proposal_include_tva_edit'] = True
-    elif query_include_tva in ('0', 'false', 'no', 'off'):
-        request.session['proposal_include_tva_edit'] = False
-
-    if client_id:
-        try:
-            request.session['proposal_client_id_edit'] = int(client_id)
-        except (TypeError, ValueError):
-            pass
-
-    if not client_id:
-        session_client_id = request.session.get('proposal_client_id_edit')
-        client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
+    session_client_id = request.session.get('proposal_client_id_edit')
+    client_id = str(session_client_id).strip() if session_client_id not in (None, '') else ''
 
     proposal_date_proposition = request.session.get('proposal_date_proposition_edit', '')
     proposal_expiration_date = request.session.get('proposal_expiration_date_edit', '')
@@ -1792,6 +1782,10 @@ def appercu_proposition_page_edit(request):
             selected_client = Client.objects.filter(id=int(client_id)).first()
         except (TypeError, ValueError):
             selected_client = None
+            
+    no_included = request.session.get('proposal_no_included_edit', '').replace('- ', '').split('\\n')
+    cgv=request.session['proposal_cgv_edit'].replace('- ', '').split('\\n')
+    proposal_id = request.session.get('proposal_draft_id', '')
 
     return render(
         request, 
@@ -1809,7 +1803,9 @@ def appercu_proposition_page_edit(request):
             'selected_client': selected_client,
             'proposal_date_proposition': proposal_date_proposition,
             'proposal_expiration_date': proposal_expiration_date_display,
-            'commercial' : request.user
+            'commercial' : request.user,
+            'no_included': no_included,
+            'cgv': cgv,
         }
     )
 
@@ -1891,7 +1887,8 @@ def proposition_detail(request):
     proposal_total = float(commercialProposal.amount_ht or 0)
     tva_amount = max(0.0, float(commercialProposal.amount_ttc or 0) - proposal_total)
     total_ttc = float(commercialProposal.amount_ttc or 0)
-
+    cgv= commercialProposal.cgv.replace('- ', '').split('\\n') if commercialProposal.cgv else []
+    no_included = commercialProposal.no_included.replace('- ', '').split('\\n') if commercialProposal.no_included else []
     return render(
         request, 
         "views/proposition_detail.html",
@@ -1901,5 +1898,7 @@ def proposition_detail(request):
             'proposal_total': proposal_total,
             'tva_amount': tva_amount,
             'total_ttc': total_ttc,
+            'cgv': cgv,
+            'no_included': no_included
         }
     )
