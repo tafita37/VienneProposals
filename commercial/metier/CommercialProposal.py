@@ -14,6 +14,8 @@ class CommercialProposal(models.Model):
 	commercial=models.ForeignKey(User, on_delete=models.PROTECT, db_column='commercial_id')
 	state=models.IntegerField(default=1)  # 0: brouillon, 1: validé
 	expiration_date = models.DateField(null=True, blank=True)
+	no_included = models.TextField()
+	cgv = models.TextField()
  
 	def save(self, *args, **kwargs):
 		if self.pk is None:  # Vérification directe sans variable

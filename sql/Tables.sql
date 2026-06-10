@@ -116,6 +116,8 @@ CREATE TABLE commercial_proposal(
    commercial_id INTEGER NOT NULL,
    state INTEGER NOT NULL DEFAULT 1,  -- 0: brouillon, 1: validé
    expiration_date DATE NOT NULL,
+   no_included TEXT NOT NULL DEFAULT '- Alarmes, et Vidéo Surveillance\n- Prestations Informatiques et téléphoniques (sauf câblage)\n- Démarches auprès des concessionnaires (eau, électricité, téléphonie) (Les arrivées électricité, télécom et eau sont supposées être en attente dans la cellule.)\n- Spécificités Incendie particulières (extincteurs, alarme incendie...)\n- Honoraires d''un éventuel bureau de contrôle, et du SPS\n- Toute prestation : de gros œuvre de pérennité dans les murs, toiture et dalle béton. sur le mobilier et agencement (Devis ArchiBô) en extérieur (toiture, façade, enseignes etc.) sur les Menuiseries extérieures',
+   cgv TEXT NOT NULL DEFAULT '- 40% d''acompte à la signature\n- 40% d''acompte à la situation travaux\n- 20% d''acompte à la levée des réserves',
    PRIMARY KEY(id),
    FOREIGN KEY(client_id) REFERENCES client(id),
    FOREIGN KEY(commercial_id) REFERENCES users(id)

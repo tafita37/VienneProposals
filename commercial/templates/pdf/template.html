@@ -188,6 +188,7 @@
       text-transform: uppercase;
       letter-spacing: 0.8px;
       padding: 10px 10px 3px;
+      background:#80808036;
     }
 
     .item-row td {
@@ -235,7 +236,11 @@
 
     .cgv, .signature { flex: 1; }
 
-    .cgv h4, .signature h4 {
+    .non-compris {
+      margin-bottom: 30px;
+    }
+
+    .cgv h4, .signature h4, .non-compris h4 {
       font-weight: 700;
       font-size: 12px;
       color: #7ab317;
@@ -244,10 +249,18 @@
       margin-bottom: 6px;
     }
 
-    .cgv p, .signature p {
+    .cgv p, .signature p, .non-compris li {
       font-size: 13px;
       color: #444;
+    }
+
+    .cgv p, .signature p {
       line-height: 2;
+    }
+
+    .non-compris li  {
+      margin-left : 10px;
+      line-height: 1.6;
     }
 
     .signature .mention {
@@ -341,29 +354,29 @@
             {% if summary_categories %}
             {% for category in summary_categories %}
               <tr class="section-row">
-  <td colspan="3">{{ category.name }}</td>
-</tr>
-{% for item in category.items %}
-  <tbody class="item-group">
-    <tr class="item-row">
-      <td>{{ item.designation }}</td>
-      <td>{{ item.quantity|floatformat:2 }}</td>
-      <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
-    </tr>
-    {% if item.explanation %}
-    <tr style="border-bottom: 2px solid #e0e0e0;">
-      <td colspan="5" style="padding: 1rem;">
-        <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
-          <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
-        </div>
-      </td>
-    </tr>
-    {% endif %}
-  </tbody>
-{% endfor %}
+                <td colspan="3">{{ category.name }}</td>
+              </tr>
+              {% for item in category.items %}
+                <tbody class="item-group">
+                  <tr class="item-row">
+                    <td>{{ item.designation }}</td>
+                    <td>{{ item.quantity|floatformat:2 }}</td>
+                    <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
+                  </tr>
+                  {% if item.explanation %}
+                  <tr style="border-bottom: 2px solid #e0e0e0;">
+                    <td colspan="5" style="padding: 1rem;">
+                      <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
+                        <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              {% endfor %}
               <tr class="subtotal-row">
-                  <td colspan="2">Sous-total {{ category.name }}</td>
-                  <td>{{ category.total|floatformat:2 }}&nbsp;€</td>
+                <td colspan="2">Sous-total {{ category.name }}</td>
+                <td>{{ category.total|floatformat:2 }}&nbsp;€</td>
               </tr>
             {% endfor %}
             {% endif %}
@@ -384,19 +397,26 @@
             </tr>
             <tr class="ttc-row">
               <td></td>
-              <td>Montant Total TTC</td>
+              <td style="width: 30%;">Montant Total TTC</td>
               <td>{{total_ttc|floatformat:2}}€</td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <div class="non-compris">
+        <h4>Non compris dans cette étude :</h4>
+        {% for item in no_included %}
+            <li>{{ item }}</li>
+        {% endfor %}
+      </div>
+
       <div class="bottom-section">
         <div class="cgv">
-          <h4>Conditions Générales de Vente</h4>
-          <p>40% d'acompte à la signature</p>
-          <p>40% d'acompte à la situation travaux</p>
-          <p>20% d'acompte à la levée des réserves</p>
+          <h4>Conditions de règlement :</h4>
+          {% for item in cgv %}
+              <p>{{ item }}</p>
+          {% endfor %}
         </div>
         <div class="signature">
           <h4>Signature :</h4>
@@ -410,8 +430,8 @@
     <footer class="footer">
       <strong>SAS VIENNE AGENCEMENT</strong> - 14 Route des Oriollères 86550 MIGNALOUX-BEAUVOIR -
       <strong>05 49 62 06 02</strong> -<br>
-      SIRET : 83131702900013 - IBAN FR76 1940 6000 3867 1769 8385 761 -
-      Code NAF (APE) 3109B - N° TVA FR 07 831317029
+      SIRET : 831 317 029 000 13 - IBAN FR76 1940 6000 3867 1769 8385 761 -
+      Code NAF (APE) 3109B - N° TVA FR07831317029
     </footer>
 
   </div>
