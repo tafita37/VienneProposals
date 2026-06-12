@@ -16,6 +16,7 @@ class Product(models.Model):
         related_name='products',
         blank=True,
     )
+    explanation=models.TextField(null=True, blank=True)
 
     @property
     def category(self):

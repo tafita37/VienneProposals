@@ -1,12 +1,13 @@
 from django.urls import include, path
 
-from commercial.controllers.CommercialController import appercu_proposition_page, appercu_proposition_page_edit, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_products_api, new_client_user_page, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_client_user, save_draft_proposition_edit_page, save_draft_proposition_page, save_proposal_options_api, save_proposal_options_edit_api, save_selected_products_api, save_selected_products_edit_api, update_client_from_proposal_api, validate_proposition_edit_page, validate_proposition_page
+from commercial.controllers.CommercialController import appercu_proposition_page, appercu_proposition_page_edit, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_product_by_id_api, get_products_api, new_client_user_page, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_client_user, save_draft_proposition_edit_page, save_draft_proposition_page, save_proposal_options_api, save_proposal_options_edit_api, save_selected_products_api, save_selected_products_edit_api, update_client_from_proposal_api, validate_proposition_edit_page, validate_proposition_page
 from commercial.controllers.PDFController import proposition_pdf
 from commercial.controllers.StatController import get_initial_dashboard_data, get_initial_user_dashboard_data, get_profit_by_month, get_stat_by_commercial, get_user_profit_by_month, user_dashboard_page
 
 urlpatterns = [
     path('catalog_page/', catalogue_page, name='catalogue_page'),
     path('api/products/', get_products_api, name='get_products_api'),
+    path('api/product_by_id/', get_product_by_id_api, name='get_product_by_id_api'),
     path('api/loadInitialDataDashboard/', get_initial_dashboard_data, name='load_initial_dashboard_data_api'),
     path('api/statByCommercial/', get_stat_by_commercial, name='stat_by_commercial_api'),
     path('api/profitByMonth/', get_profit_by_month, name='profit_by_month_api'),
