@@ -535,6 +535,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ajout d'une classe pour pouvoir la cibler/masquer si besoin en CSS ou JS
     row.className = "product-explanation-row";
+    row.style.backgroundColor="#fafaf8";
+    row.style.borderBottom = "2px solid var(--border)";
+    row.setAttribute("data-product-id", product.id);
 
     const explanation = product.explanation
       ? String(product.explanation).trim()
@@ -669,6 +672,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   bindDeleteButtons();
   bindPriceCoefficientSync();
+
+  if (categoryFilter) {
+		categoryFilter.addEventListener('change', fetchProducts);
+	}
 
   if (searchFilter) {
     let searchTimeout;
