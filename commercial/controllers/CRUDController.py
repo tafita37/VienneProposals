@@ -59,6 +59,8 @@ def get_products_api(request):
 
     if category_id:
         products = products.filter(categories__id=category_id).distinct()
+        
+    products=products.order_by('designation')
 
     data = [
         {
@@ -71,6 +73,7 @@ def get_products_api(request):
             'unit_name': product.unit.name,
             'purchase_unit_price': float(product.purchase_unit_price),
             'sale_unit_price': float(product.sale_unit_price),
+            'explanation': product.explanation,
         }
         for product in products
     ]
