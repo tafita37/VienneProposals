@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import transaction
 
-from authentification.decoratos import user_required
+from authentification.decoratos import admin_required, user_required
 from commercial.metier.Category import Category
 from commercial.metier.Client import Client
 from commercial.metier.Company import Company
@@ -509,6 +509,35 @@ def catalogue_page(request):
         }
     )
 
+@require_GET
+@user_required
+def get_product_by_id_api(request):
+    product_id = request.GET.get('product_id')
+    
+    try:
+        product_id = int(product_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'message': 'product_id invalide.'}, status=400)
+
+    # Récupération du produit avec ses relations
+    product = Product.objects.filter(id=product_id).select_related('unit').prefetch_related('categories').first()
+    
+    if product is None:
+        return JsonResponse({'success': False, 'message': 'Produit introuvable.'}, status=404)
+
+    # On sérialise (transforme en dictionnaire) manuellement le produit et ses relations
+    product_data = {
+        'id': product.id,
+        'designation': product.designation, # Remplace par tes vrais noms de champs
+        'purchase_unit_price' : float(product.purchase_unit_price),
+        'sale_unit_price' : float(product.sale_unit_price),
+        'coefficient' : float(product.coefficient),
+        'unit': product.unit.name if product.unit else None, 
+        'categories': [cat.name for cat in product.categories.all()],
+        'explanation': product.explanation,
+    }
+
+    return JsonResponse({'success': True, 'product': product_data})
 
 @require_GET
 @user_required
@@ -760,6 +789,33 @@ def save_client_user(request):
 
     return redirect('new_proposition_page')
 
+@require_POST
+@admin_required
+def save_explanation_product_admin_api(request) :
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Payload JSON invalide.'}, status=400)
+
+    product_id = payload.get('product_id')
+    explanation = str(payload.get('explanation', '') or '').strip()
+
+    if product_id in (None, ''):
+        return JsonResponse({'success': False, 'message': 'product_id manquant.'}, status=400)
+
+    try:
+        product_id = int(product_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'message': 'product_id invalide.'}, status=400)
+
+    product = Product.objects.filter(id=product_id).first()
+    if product is None:
+        return JsonResponse({'success': False, 'message': 'Produit introuvable.'}, status=404)
+
+    product.explanation = explanation
+    product.save(update_fields=['explanation'])
+
+    return JsonResponse({'success': True, 'message': 'Explication du produit mise à jour avec succès.'})
 
 @require_POST
 @user_required

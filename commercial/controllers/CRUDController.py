@@ -36,7 +36,7 @@ def liste_categorie_page(request):
 @require_GET
 @admin_required
 def liste_product_page(request):
-    all_products = Product.objects.select_related('unit').prefetch_related('categories').all()
+    all_products = Product.objects.select_related('unit').prefetch_related('categories').order_by('designation').all()
     all_categories = Category.objects.all()
     all_units = Unit.objects.all()
     return render(

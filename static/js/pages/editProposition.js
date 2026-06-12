@@ -165,6 +165,33 @@ async function loadProductsByCategory(categoryId) {
     }
 }
 
+async function changeExplanationInputValue(productId) {
+    try {
+        const response = await fetch(`/com/api/product_by_id/?product_id=${productId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erreur lors de la récupération des produits');
+        }
+
+        const data = await response.json();
+        const product = data?.product;
+        const explanationInput = document.getElementById('productExplanation');
+        if (explanationInput) {
+            explanationInput.value = product?.explanation;
+        }
+        
+    } catch (error) {
+        console.error(error);
+        productSelect.innerHTML = '<option value="">Sélectionner</option>';
+        clearProductFields();
+    }
+}
+
 function clearProductFields() {
     const unitPriceInput = document.getElementById('productUnitPrice');
     const coefficientInput = document.getElementById('productCoefficient');
@@ -853,6 +880,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (productSelect) {
         productSelect.addEventListener('change', (event) => {
             fillProductFields(event.target.value);
+        });
+
+        productSelect.addEventListener('change', (event) => {
+            const productId= event.target.value;
+            changeExplanationInputValue(productId);
         });
     }
 

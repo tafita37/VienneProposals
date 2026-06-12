@@ -40,6 +40,7 @@ CREATE TABLE product(
    sale_unit_price DOUBLE PRECISION NOT NULL,
    coefficient NUMERIC(15,2) NOT NULL,
    unit_id INTEGER NOT NULL,
+   explanation TEXT DEFAULT '',  -- Ajouter
    PRIMARY KEY(id),
    UNIQUE(designation),
    FOREIGN KEY(unit_id) REFERENCES unit(id)
@@ -131,6 +132,7 @@ CREATE TABLE proposal_product(
    sale_unit_price DOUBLE PRECISION NOT NULL,
    product_id INTEGER NOT NULL,
    commercial_proposal_id INTEGER NOT NULL,
+   explanation TEXT DEFAULT '',  -- Ajouter
    PRIMARY KEY(id),
    FOREIGN KEY(product_id) REFERENCES product(id),
    FOREIGN KEY(commercial_proposal_id) REFERENCES commercial_proposal(id)

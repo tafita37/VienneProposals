@@ -26,6 +26,7 @@ from authentification.controllers.UserController import (
     reset_admin_password_page,
     send_admin_reset_link,
 )
+from commercial.controllers.CommercialController import save_explanation_product_admin_api
 from commercial.controllers.ImportController import categories_api, import_page, read_excel_file
 from commercial.controllers.StatController import admin_page, dashboard_page
 
@@ -47,4 +48,5 @@ urlpatterns = [
     path('import_page/', import_page, name='import_page'),
     path('import/api/categories/', categories_api, name='import_categories_api'),
     path('import/read_excel_file/', read_excel_file, name='read_excel_file'),
+    path('api/com/save_explanation_product/', save_explanation_product_admin_api, name='save_explanation_product_admin_api'),
 ]
