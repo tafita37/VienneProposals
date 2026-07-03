@@ -33,6 +33,12 @@ CREATE TABLE unit(
    UNIQUE(name)
 );
 
+CREATE TABLE products_coefficient_history(
+   id SERIAL,
+   coefficient NUMERIC(15,2) NOT NULL,
+   date_change DATE NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE product(
    id SERIAL,
    designation TEXT NOT NULL,

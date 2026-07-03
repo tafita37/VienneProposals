@@ -11,6 +11,7 @@ from commercial.metier.Individual import Individual
 from commercial.metier.Client import Client
 from commercial.metier.Company import Company
 from commercial.metier.Product import Product
+from commercial.metier.ProductsCoefficientHistory import ProductsCoefficientHistory
 from commercial.metier.Unit import Unit
 
 @require_GET
@@ -39,10 +40,18 @@ def liste_product_page(request):
     all_products = Product.objects.select_related('unit').prefetch_related('categories').order_by('designation').all()
     all_categories = Category.objects.all()
     all_units = Unit.objects.all()
+    product_coefficient_history = ProductsCoefficientHistory.objects.order_by('-date_change', '-id').first()
+    global_coefficient = product_coefficient_history.coefficient if product_coefficient_history else Decimal('1.30')
     return render(
         request, 
         "views/products.html",
-        {"products": all_products, "categories": all_categories, "units": all_units}
+        {
+            "products": all_products,
+            "categories": all_categories,
+            "units": all_units,
+            "product_coefficient_history": product_coefficient_history,
+            "global_coefficient": global_coefficient,
+        }
     )
 
 
@@ -241,18 +250,30 @@ def update_global_product_coefficient(request):
     try:
         coefficient = Decimal(raw_coefficient)
     except (InvalidOperation, TypeError, ValueError):
-        return redirect('liste_product_page')
+        return JsonResponse({'success': False, 'message': 'Coefficient invalide.'}, status=400)
 
-    if coefficient < 0:
-        return redirect('liste_product_page')
+    if coefficient <= 0:
+        return JsonResponse({'success': False, 'message': 'Le coefficient doit être supérieur à 0.'}, status=400)
 
     with transaction.atomic():
-        for product in Product.objects.all():
+        products = list(Product.objects.all())
+        for product in products:
             product.coefficient = coefficient
-            product.sale_unit_price = float(product.purchase_unit_price) * float(coefficient)
-            product.save(update_fields=['coefficient', 'sale_unit_price'])
+            product.sale_unit_price = float(Decimal(str(product.purchase_unit_price)) * coefficient)
 
-    return redirect('liste_product_page')
+        if products:
+            Product.objects.bulk_update(products, ['coefficient', 'sale_unit_price'])
+
+        ProductsCoefficientHistory.objects.create(coefficient=coefficient)
+
+    return JsonResponse(
+        {
+            'success': True,
+            'message': 'Le coefficient global a bien été modifié.',
+            'coefficient': str(coefficient),
+            'updated_products': len(products),
+        }
+    )
 
 @require_POST
 @admin_required

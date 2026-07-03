@@ -167,6 +167,27 @@ function bindPriceCoefficientSync() {
   });
 }
 
+function parseCoefficientValue(value) {
+  if (value === null || value === undefined) {
+    return NaN;
+  }
+
+  const normalized = String(value).replace(",", ".").trim();
+  if (normalized === "") {
+    return NaN;
+  }
+
+  return Number(normalized);
+}
+
+function formatGlobalCoefficient(value) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  return (Math.round(value * 100) / 100).toFixed(2);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const addProductBtn = document.getElementById("addProductBtn");
   const deleteModal = document.getElementById("deleteConfirmModal");
@@ -177,6 +198,141 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchFilter = document.getElementById("searchFilter");
   const productsTableBody = document.getElementById("productsTableBody");
   const productsMessage = document.getElementById("productsMessage");
+  const globalCoefficientValue = document.getElementById(
+    "globalCoefficientValue",
+  );
+  const globalCoefficientMessage = document.getElementById(
+    "globalCoefficientMessage",
+  );
+  const globalCoefficientModal = document.getElementById(
+    "globalCoefficientModal",
+  );
+  const globalCoefficientModalMessage = document.getElementById(
+    "globalCoefficientModalMessage",
+  );
+  const globalCoefficientInput = document.getElementById(
+    "globalCoefficientInput",
+  );
+  const globalCoefficientForm = document.getElementById(
+    "globalCoefficientForm",
+  );
+  const editGlobalCoefficientBtn = document.getElementById(
+    "editGlobalCoefficientBtn",
+  );
+
+  const getCurrentGlobalCoefficient = () => {
+    const rawValue =
+      editGlobalCoefficientBtn?.dataset.currentCoefficient ||
+      globalCoefficientValue?.textContent ||
+      "1.30";
+    const parsedValue = parseCoefficientValue(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : 1.3;
+  };
+
+  const setGlobalCoefficientMessage = (message, type = "info", target) => {
+    const element = target || globalCoefficientMessage;
+    if (!element) return;
+
+    element.textContent = message || "";
+    element.className = "form-message coefficient-message";
+    if (message) {
+      element.classList.add(type);
+    }
+  };
+
+  const openGlobalCoefficientModal = () => {
+    if (!globalCoefficientModal || !globalCoefficientInput) {
+      return;
+    }
+
+    globalCoefficientInput.value = formatGlobalCoefficient(
+      getCurrentGlobalCoefficient(),
+    );
+    setGlobalCoefficientMessage("", "info", globalCoefficientModalMessage);
+
+    globalCoefficientModal.classList.remove("hidden");
+    globalCoefficientModal.style.display = "flex";
+    globalCoefficientModal.setAttribute("aria-hidden", "false");
+    window.setTimeout(() => globalCoefficientInput.focus(), 0);
+  };
+
+  const closeGlobalCoefficientModal = () => {
+    if (!globalCoefficientModal) {
+      return;
+    }
+
+    globalCoefficientModal.classList.add("hidden");
+    globalCoefficientModal.style.display = "none";
+    globalCoefficientModal.setAttribute("aria-hidden", "true");
+    setGlobalCoefficientMessage("", "info", globalCoefficientModalMessage);
+  };
+
+  const applyGlobalCoefficient = async () => {
+    if (!globalCoefficientInput || !globalCoefficientValue) {
+      return;
+    }
+
+    const parsedCoefficient = parseCoefficientValue(
+      globalCoefficientInput.value,
+    );
+
+    if (!Number.isFinite(parsedCoefficient) || parsedCoefficient <= 0) {
+      setGlobalCoefficientMessage(
+        "Veuillez saisir un coefficient supérieur à 0.",
+        "error",
+        globalCoefficientModalMessage,
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch("/admin/product/update-global-coefficient/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-CSRFToken": getCsrfToken(),
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({
+          coefficient: String(parsedCoefficient),
+        }).toString(),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(
+          payload?.message ||
+            "Erreur lors de la modification du coefficient.",
+        );
+      }
+
+      const formattedCoefficient = formatGlobalCoefficient(
+        parseCoefficientValue(payload.coefficient ?? parsedCoefficient),
+      );
+      globalCoefficientValue.textContent = formattedCoefficient;
+      if (editGlobalCoefficientBtn) {
+        editGlobalCoefficientBtn.dataset.currentCoefficient =
+          formattedCoefficient;
+      }
+
+      setGlobalCoefficientMessage(
+        payload.message ||
+          `Coefficient modifié avec succès : ${formattedCoefficient}.`,
+        "success",
+        globalCoefficientMessage,
+      );
+      closeGlobalCoefficientModal();
+    } catch (error) {
+      setGlobalCoefficientMessage(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la modification du coefficient.",
+        "error",
+        globalCoefficientModalMessage,
+      );
+    }
+  };
 
   const setExplanationEditingState = (row, isEditing) => {
     if (!row) {
@@ -306,9 +462,11 @@ document.addEventListener("DOMContentLoaded", () => {
             explanationInput.value || "",
           );
           setExplanationEditingState(explanationRow, false);
-          const explanationText = document.getElementById("explanation-text" + explanationRow.dataset.productId);
-          explanationText.style.fontStyle = 'normal';
-          explanationText.style.color = 'var(--text-dark)';
+          const explanationText = document.getElementById(
+            "explanation-text" + explanationRow.dataset.productId,
+          );
+          explanationText.style.fontStyle = "normal";
+          explanationText.style.color = "var(--text-dark)";
           explanationText.textContent = explanationInput.value.trim();
         } catch (error) {
           console.error(
@@ -401,6 +559,45 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("productModal").style.display = "block";
     });
   }
+
+  if (editGlobalCoefficientBtn) {
+    editGlobalCoefficientBtn.addEventListener(
+      "click",
+      openGlobalCoefficientModal,
+    );
+  }
+
+  if (globalCoefficientModal) {
+    globalCoefficientModal.classList.add("hidden");
+    globalCoefficientModal.style.display = "none";
+    globalCoefficientModal.setAttribute("aria-hidden", "true");
+
+    globalCoefficientModal.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      if (target.dataset.closeCoefficientModal === "true") {
+        closeGlobalCoefficientModal();
+      }
+    });
+  }
+
+  if (globalCoefficientForm) {
+    globalCoefficientForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyGlobalCoefficient();
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      globalCoefficientModal &&
+      !globalCoefficientModal.classList.contains("hidden")
+    ) {
+      closeGlobalCoefficientModal();
+    }
+  });
 
   const categoryPicker = document.getElementById("productCategory");
   if (categoryPicker) {
@@ -535,7 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ajout d'une classe pour pouvoir la cibler/masquer si besoin en CSS ou JS
     row.className = "product-explanation-row";
-    row.style.backgroundColor="#fafaf8";
+    row.style.backgroundColor = "#fafaf8";
     row.style.borderBottom = "2px solid var(--border)";
     row.setAttribute("data-product-id", product.id);
 
@@ -674,8 +871,8 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPriceCoefficientSync();
 
   if (categoryFilter) {
-		categoryFilter.addEventListener('change', fetchProducts);
-	}
+    categoryFilter.addEventListener("change", fetchProducts);
+  }
 
   if (searchFilter) {
     let searchTimeout;

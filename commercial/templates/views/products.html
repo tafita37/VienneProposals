@@ -28,28 +28,29 @@
 </div>
 
 <div class="card" style="margin-bottom: 1.5rem;">
-    <h2>Coefficient global</h2>
-    <p style="margin-bottom: 1rem; color: var(--text-light); line-height: 1.6;">
-        Ce coefficient sera appliqué à tous les produits du catalogue et recalculera leur prix de vente à partir du prix d'achat.
-    </p>
-    <form action="{% url 'update_global_product_coefficient' %}" method="post"
-        style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
-        {% csrf_token %}
-        <div class="form-group" style="min-width: 220px; margin-bottom: 0;">
-            <label for="globalCoefficient">Nouveau coefficient</label>
-            <input
-                type="number"
-                id="globalCoefficient"
-                name="coefficient"
-                min="0"
-                step="0.01"
-                required
-            >
+    <div class="coefficient-summary">
+        <div>
+            <h2>Coefficient global</h2>
+            <p style="margin-bottom: 0; color: var(--text-light); line-height: 1.6;">
+                Ce coefficient sera appliqué à tous les produits du catalogue et recalculera leur prix de vente à partir du prix d'achat.
+            </p>
         </div>
-        <button type="submit" class="btn btn-primary" style="height: fit-content;">
-            Appliquer à tous les produits
-        </button>
-    </form>
+        <div class="coefficient-summary__actions">
+            <div class="coefficient-summary__value">
+                <span class="coefficient-summary__label">Coefficient actuel</span>
+                <strong id="globalCoefficientValue" class="coefficient-summary__number">{{ global_coefficient|default:1.30|floatformat:2 }}</strong>
+            </div>
+            <button
+                id="editGlobalCoefficientBtn"
+                type="button"
+                class="btn btn-primary coefficient-summary__action"
+                data-current-coefficient="{{ global_coefficient|default:1.30|floatformat:2 }}"
+            >
+                Modifier le coefficient
+            </button>
+        </div>
+    </div>
+    <div id="globalCoefficientMessage" class="form-message coefficient-message" aria-live="polite"></div>
 </div>
 
 <div class="card">
@@ -174,6 +175,41 @@
             <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
             <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
         </div>
+    </div>
+</div>
+
+<div id="globalCoefficientModal" class="coefficient-modal hidden" aria-hidden="true" style="display: none;">
+    <div class="coefficient-modal__backdrop" data-close-coefficient-modal="true"></div>
+    <div class="coefficient-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="globalCoefficientTitle">
+        <div class="coefficient-modal__header">
+            <div>
+                <h3 id="globalCoefficientTitle">Modifier le coefficient global</h3>
+                <p>Affinez le coefficient appliqué à tous les produits du catalogue.</p>
+            </div>
+            <button type="button" class="modal-close" data-close-coefficient-modal="true">✕</button>
+        </div>
+        <form id="globalCoefficientForm">
+            <div class="coefficient-modal__body">
+                <div class="form-group">
+                    <label for="globalCoefficientInput">Nouveau coefficient</label>
+                    <input
+                        type="number"
+                        id="globalCoefficientInput"
+                        name="coefficient"
+                        min="0"
+                        step="0.01"
+                        value="{{ product_coefficient_history.coefficient}}"
+                        required
+                    >
+                </div>
+                <p class="coefficient-modal__hint">Exemple: 1.30 signifie que le prix de vente est calculé à partir du prix d'achat multiplié par 1.30.</p>
+                <div id="globalCoefficientModalMessage" class="form-message coefficient-message" aria-live="polite"></div>
+            </div>
+            <div class="coefficient-modal__footer">
+                <button type="button" class="btn btn-secondary" data-close-coefficient-modal="true">Annuler</button>
+                <button type="submit" class="btn btn-primary">Valider les modifications</button>
+            </div>
+        </form>
     </div>
 </div>
 
