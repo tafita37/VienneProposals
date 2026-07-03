@@ -69,3 +69,5 @@ INSERT INTO company (name, registration_number, tax_identification_number, creat
 ('SA Michel Aérospatiale', 'RCS TOULOUSE 456 789 123', 'TVA FR45678912345', '2010-02-01', 3, 8),
 ('EURL Laurent Vignobles', 'RCS DIJON 789 123 456', 'TVA FR78912345678', '2019-11-15', 4, 9),
 ('Dubois Technologies', 'RCS MONTPELLIER 321 654 987', 'TVA FR32165498701', '2020-06-30', 5, 10);
+
+INSERT INTO products_coefficient_history (coefficient) VALUES (1.3);
