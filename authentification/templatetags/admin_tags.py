@@ -1,6 +1,7 @@
 from django import template
-from django.utils import timezone
-from django.contrib.auth.models import User
+
+from chatbot.metier.CommercialChatMessage import CommercialChatMessage
+from chatbot.metier.AdminChatMessage import AdminChatMessage
 
 register = template.Library()
 
@@ -8,11 +9,13 @@ register = template.Library()
 def admin_sidebar_data(context):
     """Charge TOUTES les données pour baseAdmin.html"""
     request = context.get('request')
+    history_message=AdminChatMessage.objects.filter(admin=request.user) if request and request.user.is_authenticated else []
     
     # Structure de données par défaut
     data = {
         'name': 'Admin',
-        'first_letter': 'A'
+        'first_letter': 'A',
+        'history_message': history_message
     }
     
     # Si utilisateur connecté, on charge les vraies données
@@ -26,11 +29,12 @@ def admin_sidebar_data(context):
 def user_sidebar_data(context):
     """Charge TOUTES les données pour baseAdmin.html"""
     request = context.get('request')
-    
+    history_message=CommercialChatMessage.objects.filter(commercial=request.user) if request and request.user.is_authenticated else []
     # Structure de données par défaut
     data = {
         'name': 'Utilisateur',
-        'first_letter': 'U'
+        'first_letter': 'U',
+        'history_message': history_message
     }
     
     # Si utilisateur connecté, on charge les vraies données
