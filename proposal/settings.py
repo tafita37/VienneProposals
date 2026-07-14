@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'anymail',
     'authentification',
     'commercial',
+    'chatbot'
 ]
 
 MIDDLEWARE = [

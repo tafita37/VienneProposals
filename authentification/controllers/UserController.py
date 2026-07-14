@@ -437,6 +437,8 @@ def reset_admin_password(request):
 
 @require_GET
 def logout_user(request):
+    request.session.pop('chat_history_admin', None)
+    request.session.pop('chat_history_commercial', None)
     logout(request)
     return redirect('login_user_page')
 

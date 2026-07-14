@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', include('proposal.admin_urls')),
     path('auth/', include('authentification.urls')),
     path('com/', include('commercial.urls')),
+    path('chat/', include('chatbot.urls')),
 ]

@@ -1,4 +1,6 @@
 {% load static %}
+{% load admin_tags %}
+{% user_sidebar_data as user %}
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -9,6 +11,153 @@
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     {% block css %}{% endblock %}
     <link rel="icon" href="{% static 'img/logo_mini.png' %}" sizes="192x192">
+
+    <style>
+        /* --- STYLE DU CHATBOT FLOTTANT --- */
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-family: inherit;
+        }
+
+        .chatbot-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .chatbot-toggle:hover {
+            transform: scale(1.05);
+            background: var(--accent-light);
+        }
+
+        .chatbot-box {
+            display: none;
+            width: 360px;
+            height: 480px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            flex-direction: column;
+            overflow: hidden;
+            position: absolute;
+            bottom: 75px;
+            right: 0;
+            border: 1px solid var(--border);
+        }
+
+        .chatbot-header {
+            background: var(--accent);
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: var(--primary-light);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+
+            /* --- AJOUTE CES TROIS LIGNES ICI --- */
+            white-space: pre-wrap;
+            /* Respecte les retours à la ligne renvoyés par l'IA */
+            word-break: break-word;
+            /* Coupe les mots trop longs si nécessaire */
+            overflow-wrap: break-word;
+            /* Force le retour à la ligne automatique */
+        }
+
+        .chat-msg.user {
+            background: var(--accent);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-msg.bot {
+            background: var(--primary-dark);
+            color: var(--text-dark);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chatbot-input-area {
+            display: flex;
+            border-top: 1px solid var(--border);
+            padding: 10px;
+            background: white;
+        }
+
+        .chatbot-input-area input {
+            flex: 1;
+            border: 1px solid var(--border);
+            color: var(--text-dark);
+            padding: 10px;
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.9rem;
+            padding-right: 40px;
+        }
+
+        .chatbot-input-area button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin-left: 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .chatbot-input-area button:hover {
+            background: var(--accent-light);
+        }
+
+        .chat-loading {
+            align-self: flex-start;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-style: italic;
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -28,8 +177,113 @@
         </div>
     </div>
 
+    <!-- --- COMPOSANT COMPLET DU CHATBOT FLOTTANT --- -->
+    <div class="chatbot-container">
+        <!-- Bouton rond d'ouverture -->
+        <button class="chatbot-toggle" id="chatToggleBtn" onclick="toggleChatbot()">💬</button>
+
+        <!-- Fenêtre de discussion -->
+        <div class="chatbot-box" id="chatbotBox">
+            <div class="chatbot-header">
+                <span>Assistant Vienne Agencement</span>
+                <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+            </div>
+            <div class="chatbot-messages" id="chatMessages">
+                <div class="chat-msg bot">Bonjour ! Comment puis-je vous aider sur le CRM de Vienne Agencement aujourd'hui {{user.name}} ?</div>
+                {%for msg in user.history_message %}
+                {% if msg.role == 'user' %}
+                <div class="chat-msg user">{{ msg.content }}</div>
+                {% elif msg.role == 'assistant' %}
+                <div class="chat-msg bot">{{ msg.content }}</div>
+                {% endif %}
+                {% endfor %}
+                <div class="chat-loading" id="chatLoading">L'assistant réfléchit...</div>
+            </div>
+            <div class="chatbot-input-area">
+                <input type="text" id="chatInput" placeholder="Posez votre question..."
+                    onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{% static 'js/common.js' %}"></script>
     {% block js %}{% endblock %}
+
+    <script>
+        // Fonction pour récupérer le cookie CSRF généré par Django
+        function getCsrfToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function toggleChatbot() {
+            const chatBox = document.getElementById('chatbotBox');
+            if (chatBox.style.display === 'flex') {
+                chatBox.style.display = 'none';
+            } else {
+                chatBox.style.display = 'flex';
+                const msgContainer = document.getElementById('chatMessages');
+                msgContainer.scrollTop = msgContainer.scrollHeight;
+            }
+        }
+
+        async function sendChatMessage() {
+            const inputField = document.getElementById('chatInput');
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            const msgContainer = document.getElementById('chatMessages');
+            const loadingIndicator = document.getElementById('chatLoading');
+
+            // Ajouter le message de l'utilisateur à l'écran
+            const userDiv = document.createElement('div');
+            userDiv.className = 'chat-msg user';
+            userDiv.innerText = message;
+            msgContainer.insertBefore(userDiv, loadingIndicator);
+
+            inputField.value = '';
+            loadingIndicator.style.display = 'block';
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            try {
+                const response = await fetch('/chat/api/chatbot/commercial/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken() // Jeton de sécurité obligatoire injecté dans les headers
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                const botDiv = document.createElement('div');
+                botDiv.className = 'chat-msg bot';
+                botDiv.innerText = data.reply || "Une erreur est survenue.";
+                msgContainer.insertBefore(botDiv, loadingIndicator);
+
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'chat-msg bot';
+                errorDiv.innerText = "Impossible de joindre le serveur de traitement sémantique.";
+                msgContainer.insertBefore(errorDiv, loadingIndicator);
+            } finally {
+                loadingIndicator.style.display = 'none';
+                msgContainer.scrollTop = msgContainer.scrollHeight;
+            }
+        }
+    </script>
 </body>
 
 </html>
