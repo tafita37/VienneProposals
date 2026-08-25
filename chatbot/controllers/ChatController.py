@@ -108,7 +108,7 @@ def chatbot_response_admin(request):
     }
     
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-120b",
         "messages": messages,
         "temperature": 0.1,  # Précision froide, pas d'hallucination créative
         "max_tokens": 150    # Réponses courtes et directes pour économiser le quota
@@ -236,7 +236,7 @@ def chatbot_response_commercial(request):
     }
     
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-120b",
         "messages": messages,
         "temperature": 0.1,  # Précision froide, pas d'hallucination créative
         "max_tokens": 150    # Réponses courtes et directes pour économiser le quota
