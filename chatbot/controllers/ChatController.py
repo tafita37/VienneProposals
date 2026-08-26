@@ -66,10 +66,12 @@ def chatbot_response_admin(request):
         # Sélection des deux paragraphes les plus proches
         top_indices = np.argsort(scores)[-15:][::-1]
         
-        # Filtre de sécurité strict fixé à 0.45
+        # Filtre  e sécurité strict fixé à 0.45
         relevant_paragraphs = [doc_texts[idx] for idx in top_indices]
         
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({"reply": "Erreur lors de l'analyse locale du contexte."})
 
     domaine=os.environ.get("DOMAIN_LINK")
@@ -198,6 +200,8 @@ def chatbot_response_commercial(request):
         relevant_paragraphs = [doc_texts[idx] for idx in top_indices]
         
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({"reply": "Erreur lors de l'analyse locale du contexte."})
 
     domaine=os.environ.get("DOMAIN_LINK")
