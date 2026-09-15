@@ -3,8 +3,9 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from django.core import mail
 from django.db import connection, IntegrityError
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from time import perf_counter
@@ -1389,3 +1390,276 @@ class CommercialEdgeCaseTests(TestCase):
 		])
 		# Doit ignorer ou traiter les lignes incomplètes
 		self.assertIsInstance(result, list)
+
+
+@override_settings(
+	EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+	DEFAULT_FROM_EMAIL='no-reply@vienne-agencement.test',
+)
+class SendProposalMailApiTests(TestCase):
+	FAKE_PDF = b'%PDF-1.4 fake proposal'
+
+	def setUp(self):
+		self.url = reverse('send_proposal_mail_api')
+		self.user = User.objects.create_user(
+			username='commercial-mail',
+			first_name='Lina',
+			last_name='Seller',
+			email='commercial-mail@example.com',
+			password='user-pass-123',
+		)
+		self.other_user = User.objects.create_user(
+			username='commercial-mail-other',
+			first_name='Other',
+			last_name='Seller',
+			email='commercial-mail-other@example.com',
+			password='user-pass-123',
+		)
+		self.client_obj = Client.objects.create(
+			name='Client Mail',
+			address='12 rue du mail',
+			email='client-mail@example.com',
+			website_url='https://client-mail.example.com',
+			phone='0606060606',
+			is_company=True,
+		)
+		self.proposal = CommercialProposal.objects.create(
+			date_proposal=date(2026, 3, 1),
+			amount_ht=1000.0,
+			amount_ttc=1200.0,
+			client=self.client_obj,
+			commercial=self.user,
+			state=1,
+		)
+
+		pdf_patcher = patch(
+			'commercial.controllers.MailController.build_proposal_pdf',
+			return_value=self.FAKE_PDF,
+		)
+		self.build_pdf_mock = pdf_patcher.start()
+		self.addCleanup(pdf_patcher.stop)
+
+	def _payload(self, **overrides):
+		payload = {
+			'proposal_id': self.proposal.id,
+			'to': 'client-mail@example.com',
+			'cc': 'associe@example.com',
+			'subject': 'Votre proposition commerciale',
+			'body': 'Bonjour,\n\nVeuillez trouver ci-joint notre proposition.',
+		}
+		payload.update(overrides)
+		return payload
+
+	def _post(self, payload):
+		return self.client.post(self.url, data=json.dumps(payload), content_type='application/json')
+
+	def test_requires_authentication(self):
+		response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 302)
+		self.assertIn(reverse('login_user_page'), response.url)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_get_method(self):
+		self.client.force_login(self.user)
+
+		response = self.client.get(self.url)
+
+		self.assertEqual(response.status_code, 405)
+
+	def test_sends_mail_with_pdf_attachment(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response.json()['success'])
+		self.assertEqual(len(mail.outbox), 1)
+
+		sent = mail.outbox[0]
+		self.assertEqual(sent.subject, 'Votre proposition commerciale')
+		self.assertIn('Veuillez trouver ci-joint', sent.body)
+		self.assertEqual(sent.from_email, 'no-reply@vienne-agencement.test')
+		self.assertEqual(sent.to, ['client-mail@example.com'])
+		self.assertEqual(sent.cc, ['associe@example.com'])
+		self.assertEqual(sent.reply_to, ['commercial-mail@example.com'])
+
+		self.assertEqual(len(sent.attachments), 1)
+		filename, content, mimetype = sent.attachments[0]
+		self.assertEqual(filename, f'proposition_{self.proposal.id}.pdf')
+		self.assertEqual(content, self.FAKE_PDF)
+		self.assertEqual(mimetype, 'application/pdf')
+		self.build_pdf_mock.assert_called_once()
+
+	def test_accepts_cc_as_list_and_removes_duplicates_and_recipient(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(cc=[
+			'associe@example.com', 'ASSOCIE@example.com', 'client-mail@example.com', ' ',
+		]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(mail.outbox[0].cc, ['associe@example.com'])
+
+	def test_cc_is_optional(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(cc=''))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(mail.outbox[0].cc, [])
+
+	def test_rejects_invalid_json(self):
+		self.client.force_login(self.user)
+
+		response = self.client.post(self.url, data='{not json', content_type='application/json')
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_missing_proposal_id(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(proposal_id=None))
+
+		self.assertEqual(response.status_code, 400)
+
+	def test_cannot_send_proposal_of_another_commercial(self):
+		self.client.force_login(self.other_user)
+
+		response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(len(mail.outbox), 0)
+		self.build_pdf_mock.assert_not_called()
+
+	def test_cannot_send_draft_proposal(self):
+		self.proposal.state = 0
+		self.proposal.save()
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_invalid_recipient(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(to='pas-une-adresse'))
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_invalid_cc(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(cc='associe@example.com, invalide'))
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_empty_subject_or_body(self):
+		self.client.force_login(self.user)
+
+		self.assertEqual(self._post(self._payload(subject='   ')).status_code, 400)
+		self.assertEqual(self._post(self._payload(body='')).status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_rejects_subject_with_line_break(self):
+		self.client.force_login(self.user)
+
+		response = self._post(self._payload(subject='Objet\nBcc: pirate@example.com'))
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_returns_500_when_pdf_generation_fails(self):
+		self.build_pdf_mock.side_effect = RuntimeError('weasyprint down')
+		self.client.force_login(self.user)
+
+		with self.assertLogs('commercial.controllers.MailController', level='ERROR'):
+			response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 500)
+		self.assertFalse(response.json()['success'])
+		self.assertEqual(len(mail.outbox), 0)
+
+	def test_returns_502_when_mail_provider_fails(self):
+		self.client.force_login(self.user)
+
+		with patch('commercial.controllers.MailController.EmailMessage.send', side_effect=OSError('smtp down')):
+			with self.assertLogs('commercial.controllers.MailController', level='ERROR'):
+				response = self._post(self._payload())
+
+		self.assertEqual(response.status_code, 502)
+		self.assertFalse(response.json()['success'])
+
+
+class SendProposalMailPageTests(TestCase):
+	def setUp(self):
+		self.url = reverse('send_proposal_mail_page')
+		self.user = User.objects.create_user(
+			username='commercial-mail-page',
+			first_name='Lina',
+			last_name='Seller',
+			email='commercial-mail-page@example.com',
+			password='user-pass-123',
+		)
+		self.other_user = User.objects.create_user(
+			username='commercial-mail-page-other',
+			first_name='Other',
+			last_name='Seller',
+			email='commercial-mail-page-other@example.com',
+			password='user-pass-123',
+		)
+		self.client_obj = Client.objects.create(
+			name='Client Mail Page',
+			address='14 rue du mail',
+			email='client-mail-page@example.com',
+			website_url='https://client-mail-page.example.com',
+			phone='0707070707',
+			is_company=True,
+		)
+		self.proposal = CommercialProposal.objects.create(
+			date_proposal=date(2026, 3, 1),
+			amount_ht=1000.0,
+			amount_ttc=1200.0,
+			client=self.client_obj,
+			commercial=self.user,
+			state=1,
+		)
+
+	def test_owner_gets_form_wired_to_send_api(self):
+		self.client.force_login(self.user)
+
+		response = self.client.get(self.url, {'proposal_id': self.proposal.id})
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, f'data-send-url="{reverse("send_proposal_mail_api")}"')
+		self.assertContains(response, f'data-proposal-id="{self.proposal.id}"')
+		self.assertContains(response, 'csrfmiddlewaretoken')
+		self.assertContains(response, 'client-mail-page@example.com')
+
+	def test_other_commercial_is_redirected(self):
+		self.client.force_login(self.other_user)
+
+		response = self.client.get(self.url, {'proposal_id': self.proposal.id})
+
+		self.assertRedirects(response, reverse('propositions_page'), fetch_redirect_response=False)
+
+	def test_draft_proposal_is_redirected(self):
+		self.proposal.state = 0
+		self.proposal.save()
+		self.client.force_login(self.user)
+
+		response = self.client.get(self.url, {'proposal_id': self.proposal.id})
+
+		self.assertRedirects(response, reverse('propositions_page'), fetch_redirect_response=False)
+
+	def test_invalid_proposal_id_is_redirected(self):
+		self.client.force_login(self.user)
+
+		response = self.client.get(self.url, {'proposal_id': 'abc'})
+
+		self.assertRedirects(response, reverse('propositions_page'), fetch_redirect_response=False)

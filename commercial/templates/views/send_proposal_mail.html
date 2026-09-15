@@ -1,0 +1,193 @@
+{% extends 'baseUser.html' %}
+
+{% load static %}
+
+{% block title %}Envoyer la proposition {{ proposal_reference }}{% endblock %}
+
+{% block header_title %}Envoyer par mail ✉️{% endblock %}
+
+{% block header_subtitle %}Rédigez votre message et envoyez la proposition en un clic{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/send-proposal-mail.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/send-proposal-mail.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="mail-page">
+
+    <div class="mail-hero">
+        <!-- <div class="mail-hero-emoji">💌</div> -->
+        <div class="mail-hero-text">
+            <h2>Un petit mot pour {{ client.name }} ?</h2>
+            <p>La proposition <strong>{{ proposal_reference }}</strong> est prête à partir. Personnalisez le message,
+                jetez un œil à l'aperçu, puis envoyez !</p>
+        </div>
+        <a href="{% url 'propositions_page' %}" class="mail-back-link">← Retour à la liste</a>
+    </div>
+
+    <div class="mail-layout">
+
+        <!-- ===== Colonne gauche : composition du mail ===== -->
+        <section class="mail-card mail-composer">
+            <header class="mail-card-head">
+                <span class="mail-card-icon">✍️</span>
+                <div>
+                    <h3>Votre message</h3>
+                    <p>Tout est pré-rempli, mais n'hésitez pas à le personnaliser.</p>
+                </div>
+            </header>
+
+            <form id="mail-form" class="mail-form" novalidate data-send-url="{% url 'send_proposal_mail_api' %}"
+                data-proposal-id="{{ proposal.id }}">
+                {% csrf_token %}
+                <div class="mail-field">
+                    <label for="mail-to">Destinataire</label>
+                    <div class="mail-input-wrap">
+                        <span class="mail-input-icon">👤</span>
+                        <input type="email" id="mail-to" name="to" value="{{ client.email }}" required
+                            placeholder="client@exemple.fr">
+                    </div>
+                    <small class="mail-hint">Adresse enregistrée pour {{ client.name }}</small>
+                </div>
+
+                <div class="mail-field-row">
+                    <div class="mail-field">
+                        <label for="mail-cc">Copie (CC)</label>
+                        <div class="mail-input-wrap">
+                            <span class="mail-input-icon">📋</span>
+                            <input type="text" id="mail-cc" name="cc" placeholder="Optionnel, séparé par des virgules">
+                        </div>
+                    </div>
+                    <!-- <div class="mail-field">
+                        <label for="mail-from">Expéditeur</label>
+                        <div class="mail-input-wrap mail-input-readonly">
+                            <span class="mail-input-icon">🏡</span>
+                            <input type="text" id="mail-from" value="{{ sender_name }} ({{ sender_email }})" readonly>
+                        </div>
+                    </div> -->
+                </div>
+
+                <div class="mail-field">
+                    <label for="mail-subject">Objet</label>
+                    <div class="mail-input-wrap">
+                        <span class="mail-input-icon">🏷️</span>
+                        <input type="text" id="mail-subject" name="subject" value="{{ default_subject }}" required>
+                    </div>
+                </div>
+
+                <div class="mail-field">
+                    <div class="mail-label-row">
+                        <label for="mail-body">Message</label>
+                        <span class="mail-counter" id="mail-counter">0 caractère</span>
+                    </div>
+                    <textarea id="mail-body" name="body" rows="14" required>{{ default_body }}</textarea>
+                </div>
+
+                <div class="mail-field">
+                    <span class="mail-label-static">Modèles rapides</span>
+                    <div class="mail-templates">
+                        <button type="button" class="mail-chip" data-template="cordial">😊 Cordial</button>
+                        <button type="button" class="mail-chip" data-template="court">⚡ Court</button>
+                        <button type="button" class="mail-chip" data-template="relance">🔔 Relance</button>
+                        <button type="button" class="mail-chip" data-template="reset">↩️ Message initial</button>
+                    </div>
+                </div>
+
+                <div class="mail-attachment">
+                    <span class="mail-attachment-icon">📎</span>
+                    <div class="mail-attachment-info">
+                        <strong>proposition_{{ proposal.id }}.pdf</strong>
+                        <small>Proposition commerciale {{ proposal_reference }} · pièce jointe automatique</small>
+                    </div>
+                    <a class="mail-attachment-link" href="{% url 'proposition_pdf' proposal.id %}"
+                        title="Télécharger le PDF">⤓</a>
+                </div>
+
+                <div class="mail-alert" id="mail-alert" role="alert" hidden>
+                    <span class="mail-alert-icon">😕</span>
+                    <p class="mail-alert-text" id="mail-alert-text"></p>
+                    <button type="button" class="mail-alert-close" id="mail-alert-close" aria-label="Fermer">×</button>
+                </div>
+
+                <div class="mail-actions">
+                    <a href="{% url 'propositions_page' %}" class="btn mail-btn-ghost">Annuler</a>
+                    <button type="submit" class="btn mail-btn-send" id="mail-send-btn">
+                        <span class="mail-btn-label">Envoyer le mail 🚀</span>
+                        <span class="mail-btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </div>
+
+                <!-- <p class="mail-static-note">ℹ️ Mode démonstration : l'envoi est simulé, aucun mail ne part réellement.
+                </p> -->
+            </form>
+        </section>
+
+        <!-- ===== Colonne droite : aperçu du PDF ===== -->
+        <section class="mail-card mail-preview">
+            <header class="mail-card-head">
+                <span class="mail-card-icon">📄</span>
+                <div>
+                    <h3>Aperçu de la pièce jointe</h3>
+                    <p>Ce que votre client va recevoir.</p>
+                </div>
+            </header>
+
+            <!-- <div class="mail-preview-summary">
+                <div class="mail-summary-item">
+                    <span class="mail-summary-label">Client</span>
+                    <span class="mail-summary-value">{{ client.name }}</span>
+                </div>
+                <div class="mail-summary-item">
+                    <span class="mail-summary-label">Projet</span>
+                    <span class="mail-summary-value">{{ proposal.project_name|default:"—" }}</span>
+                </div>
+                <div class="mail-summary-item">
+                    <span class="mail-summary-label">Montant TTC</span>
+                    <span class="mail-summary-value mail-summary-amount">{{ proposal.amount_ttc|floatformat:2 }} €</span>
+                </div>
+                <div class="mail-summary-item">
+                    <span class="mail-summary-label">Valable jusqu'au</span>
+                    <span class="mail-summary-value">{{ proposal.expiration_date|date:"j F Y"|default:"—" }}</span>
+                </div>
+            </div> -->
+
+            <div class="mail-preview-frame">
+                <div class="mail-preview-bar">
+                    <span class="mail-dot mail-dot-red"></span>
+                    <span class="mail-dot mail-dot-yellow"></span>
+                    <span class="mail-dot mail-dot-green"></span>
+                    <span class="mail-preview-name">proposition_{{ proposal.id }}.pdf</span>
+                </div>
+                <div class="mail-preview-loader" id="mail-preview-loader">
+                    <span class="mail-preview-spinner"></span>
+                    <p>Préparation de l'aperçu…</p>
+                </div>
+                <iframe id="mail-preview-iframe" class="mail-preview-iframe"
+                    src="{% url 'proposition_pdf' proposal.id %}?inline=1"
+                    title="Aperçu de la proposition commerciale"></iframe>
+            </div>
+
+            <a class="mail-preview-open" href="{% url 'proposition_pdf' proposal.id %}?inline=1" target="_blank"
+                rel="noopener">Ouvrir le PDF dans un nouvel onglet ↗</a>
+        </section>
+    </div>
+</div>
+
+<!-- ===== Overlay de confirmation ===== -->
+<div class="mail-success-overlay" id="mail-success-overlay" hidden>
+    <div class="mail-success-card">
+        <div class="mail-success-plane">🚀</div>
+        <h2>C'est envoyé !</h2>
+        <p>La proposition <strong>{{ proposal_reference }}</strong> vient de s'envoler vers
+            <strong id="mail-success-recipient">{{ client.email }}</strong>.</p>
+        <div class="mail-success-actions">
+            <a href="{% url 'propositions_page' %}" class="btn mail-btn-send">Retour aux propositions</a>
+            <button type="button" class="btn mail-btn-ghost" id="mail-success-stay">Rester ici</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

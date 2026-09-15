@@ -4,6 +4,7 @@ from weasyprint import HTML, CSS
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pypdf import PdfReader, PdfWriter
 
 from commercial.metier.CommercialProposal import CommercialProposal
@@ -59,14 +60,14 @@ def _build_summary_categories(proposal):
 
     return list(summary_by_category.values()), proposal_total
 
-def proposition_pdf(request, pk):
-    proposal = get_object_or_404(CommercialProposal, pk=pk)
+def build_proposal_pdf(proposal, base_url):
+    """Génère le PDF complet d'une proposition (page générée + PDF annexe) et renvoie ses octets."""
     summary_categories, proposal_total = _build_summary_categories(proposal)
     include_tva = float(proposal.amount_ttc or 0) > float(proposal.amount_ht or 0)
     tva_amount = proposal_total * 0.2 if include_tva else 0.0
     total_ttc = proposal_total + tva_amount
-    no_included = proposal.no_included.replace('- ', '').split('\\n')
-    cgv=proposal.cgv.replace('- ', '').split('\\n')
+    no_included = (proposal.no_included or '').replace('- ', '').split('\\n')
+    cgv = (proposal.cgv or '').replace('- ', '').split('\\n')
 
     context = {
         'proposal': proposal,
@@ -83,7 +84,7 @@ def proposition_pdf(request, pk):
     html_string = render_to_string('pdf/template.html', context)
     css_path = os.path.join(settings.BASE_DIR, 'static', 'css', 'pages', 'preview-proposition.css')
     css = CSS(filename=css_path)
-    main_pdf_bytes = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(stylesheets=[css])
+    main_pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf(stylesheets=[css])
 
     # Fusion avec le PDF existant (page 2)
     second_pdf_path = os.path.join(settings.BASE_DIR, 'static', 'pdf', 'facture_FA02015-4.pdf')  # adapte le chemin
@@ -103,8 +104,18 @@ def proposition_pdf(request, pk):
     # Écriture du résultat final
     output_buffer = io.BytesIO()
     writer.write(output_buffer)
-    output_buffer.seek(0)
+    return output_buffer.getvalue()
 
-    response = HttpResponse(output_buffer.read(), content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="proposition_{pk}.pdf"'
+
+# SAMEORIGIN : autorise l'affichage du PDF dans l'iframe d'aperçu de l'application (DENY par défaut)
+@xframe_options_sameorigin
+def proposition_pdf(request, pk):
+    proposal = get_object_or_404(CommercialProposal, pk=pk)
+    pdf_bytes = build_proposal_pdf(proposal, base_url=request.build_absolute_uri('/'))
+
+    # `?inline=1` permet d'afficher le PDF directement dans un aperçu (iframe) au lieu de le telecharger
+    disposition = 'inline' if request.GET.get('inline') else 'attachment'
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'{disposition}; filename="proposition_{pk}.pdf"'
     return response
