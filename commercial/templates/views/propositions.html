@@ -65,13 +65,21 @@
                         {% endif %}
                     </td>
                     <td>
+                        <div class="proposition-actions">
                         {% if proposition.state == 1 %}
-                        <a 
-                            href="{% url 'proposition_detail_page' %}?proposal_id={{ proposition.id }}" 
+                        <a
+                            href="{% url 'proposition_detail_page' %}?proposal_id={{ proposition.id }}"
                             class="btn"
                             style="background: var(--accent); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;"
                         >
                             Voir
+                        </a>
+                        <a
+                            href="{% url 'send_proposal_mail_page' %}?proposal_id={{ proposition.id }}"
+                            class="btn btn-mail"
+                            title="Envoyer la proposition par mail"
+                        >
+                            ✉️ Envoyer
                         </a>
                         {% else %}
                         <a 
@@ -82,6 +90,7 @@
                             Modifier
                         </a>
                         {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {%endfor%}
@@ -127,6 +136,12 @@
                     class="btn proposition-mobile-button"
                 >
                     Voir
+                </a>
+                <a
+                    href="{% url 'send_proposal_mail_page' %}?proposal_id={{ proposition.id }}"
+                    class="btn btn-mail proposition-mobile-button"
+                >
+                    ✉️ Envoyer
                 </a>
                 {% else %}
                 <a

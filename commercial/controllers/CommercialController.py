@@ -1958,3 +1958,53 @@ def proposition_detail(request):
             'no_included': no_included
         }
     )
+
+@require_GET
+@user_required
+def send_proposal_mail_page(request):
+    """Interface de rédaction du mail d'envoi d'une proposition commerciale."""
+    proposal_id = request.GET.get('proposal_id', '').strip()
+
+    # Mêmes règles que l'API d'envoi : uniquement les propositions validées du commercial connecté
+    proposal = (
+        CommercialProposal.objects.select_related('client', 'commercial')
+        .filter(id=proposal_id, commercial=request.user, state=1)
+        .first()
+    ) if proposal_id.isdigit() else None
+    if proposal is None:
+        return redirect('propositions_page')
+
+    client = proposal.client
+    commercial = proposal.commercial
+
+    sender_name = f"{commercial.first_name or ''} {commercial.last_name or ''}".strip() or commercial.username
+    proposal_reference = f"PROP-2026-{proposal.id}"
+
+    default_subject = f"Votre proposition commerciale {proposal_reference} - Vienne Agencement"
+    default_body = (
+        f"Bonjour {client.name},\n\n"
+        "Nous vous remercions pour la confiance que vous accordez à Vienne Agencement.\n\n"
+        f"Vous trouverez en pièce jointe la proposition commerciale {proposal_reference}"
+        f"{' concernant le projet « ' + proposal.project_name + ' »' if proposal.project_name else ''}, "
+        f"pour un montant de {float(proposal.amount_ttc or 0):.2f} € TTC.\n\n"
+        "Cette proposition reste valable jusqu'au "
+        f"{proposal.expiration_date.strftime('%d/%m/%Y') if proposal.expiration_date else '—'}.\n\n"
+        "Nous restons à votre entière disposition pour toute précision ou ajustement.\n\n"
+        "Bien cordialement,\n"
+        f"{sender_name}\n"
+        "Vienne Agencement"
+    )
+
+    return render(
+        request,
+        "views/send_proposal_mail.html",
+        {
+            'proposal': proposal,
+            'client': client,
+            'sender_name': sender_name,
+            'sender_email': commercial.email,
+            'proposal_reference': proposal_reference,
+            'default_subject': default_subject,
+            'default_body': default_body,
+        }
+    )

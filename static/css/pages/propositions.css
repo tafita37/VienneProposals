@@ -2,6 +2,30 @@
     display: none;
 }
 
+/* ========== ACTIONS DE LIGNE ========== */
+.proposition-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-mail {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: #fff;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(168, 196, 122, 0.4);
+}
+
+.btn-mail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(168, 196, 122, 0.55);
+    color: #fff;
+}
+
 @media (max-width: 768px) {
     .table-wrapper {
         display: none;
@@ -58,6 +82,8 @@
     .proposition-mobile-actions {
         display: flex;
         justify-content: flex-end;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .proposition-mobile-button {
