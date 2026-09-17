@@ -737,7 +737,7 @@ def new_client_user_page(request):
 def save_client_user(request):
     address = request.POST.get('address')
     email = request.POST.get('email')
-    website_url = request.POST.get('website_url')
+    website_url = request.POST.get('website_url') or None
     phone = request.POST.get('phone')
     is_company = bool(int(request.POST.get('is_company')))
 

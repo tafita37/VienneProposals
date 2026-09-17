@@ -6,7 +6,7 @@ class Client(models.Model):
     name = models.CharField(max_length=100, unique=True)
     address = models.CharField(max_length=100, unique=True)
     email = models.EmailField(max_length=100, unique=True)
-    website_url = models.TextField(unique=True)
+    website_url = models.TextField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=50, unique=True)
     is_company = models.BooleanField(null=False)
 
