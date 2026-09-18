@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from commercial.controllers.CommercialController import appercu_proposition_page, appercu_proposition_page_edit, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_product_by_id_api, get_products_api, new_client_user_page, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, save_client_user, save_draft_proposition_edit_page, save_draft_proposition_page, save_proposal_options_api, save_proposal_options_edit_api, save_selected_products_api, save_selected_products_edit_api, send_proposal_mail_page, update_client_from_proposal_api, validate_proposition_edit_page, validate_proposition_page
+from commercial.controllers.CommercialController import appercu_proposition_page, appercu_proposition_page_edit, catalogue_page, edit_draft_proposition_page, get_client_by_id_api, get_product_by_id_api, get_products_api, new_client_user_page, new_proposition_page, proposition_detail, propositions_page, remove_selected_product_api, remove_selected_product_edit_api, save_client_user, save_draft_proposition_edit_page, save_draft_proposition_page, save_proposal_options_api, save_proposal_options_edit_api, save_selected_products_api, save_selected_products_edit_api, send_proposal_mail_page, update_client_from_proposal_api, validate_proposition_edit_page, validate_proposition_page
 from commercial.controllers.MailController import send_proposal_mail_api
 from commercial.controllers.PDFController import proposition_pdf
 from commercial.controllers.StatController import get_initial_dashboard_data, get_initial_user_dashboard_data, get_profit_by_month, get_stat_by_commercial, get_user_profit_by_month, user_dashboard_page
@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/proposals/selected-products/', save_selected_products_api, name='save_selected_products_api'),
     path('api/proposals/selected-products/edit/', save_selected_products_edit_api, name='save_selected_products_edit_api'),
     path('api/proposals/remove-product/', remove_selected_product_api, name='remove_selected_product_api'),
+    path('api/proposals/remove-product/edit/', remove_selected_product_edit_api, name='remove_selected_product_edit_api'),
     path('api/proposals/options/', save_proposal_options_api, name='save_proposal_options_api'),
     path('api/proposals/options/edit/', save_proposal_options_edit_api, name='save_proposal_options_edit_api'),
     path('new_proposition_page/', new_proposition_page, name='new_proposition_page'),
