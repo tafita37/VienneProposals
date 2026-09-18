@@ -202,6 +202,27 @@ function clearProductFields() {
     if (quantityInput) quantityInput.value = '1';
 }
 
+function updateUnitPriceFromCoefficient() {
+    const productSelect = document.getElementById('productSelect');
+    const unitPriceInput = document.getElementById('productUnitPrice');
+    const coefficientInput = document.getElementById('productCoefficient');
+
+    if (!productSelect || !unitPriceInput) {
+        return;
+    }
+
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    const basePrice = parseFloat(selectedOption?.dataset.unitPrice);
+    if (!productSelect.value || Number.isNaN(basePrice)) {
+        unitPriceInput.value = '0.00';
+        return;
+    }
+
+    // Même règle que le bouton "Ajouter" : un coefficient vide ou invalide vaut 1
+    const coefficient = parseFloat(coefficientInput?.value) || 1;
+    unitPriceInput.value = (basePrice * coefficient).toFixed(2);
+}
+
 function fillProductFields(productId) {
     const productSelect = document.getElementById('productSelect');
     const unitPriceInput = document.getElementById('productUnitPrice');
@@ -215,8 +236,8 @@ function fillProductFields(productId) {
     const selectedOption = productSelect.options[productSelect.selectedIndex];
     
     if (selectedOption && selectedOption.dataset.unitPrice) {
-        if (unitPriceInput) unitPriceInput.value = parseFloat(selectedOption.dataset.unitPrice).toFixed(2);
         if (coefficientInput) coefficientInput.value = parseFloat(1).toFixed(1);
+        updateUnitPriceFromCoefficient();
     } else {
         clearProductFields();
     }
@@ -398,9 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryName = product.category_name || '';
         const designation = product.designation || '';
         const quantity = Number(item?.quantity || 0);
-        const unitPrice = Number(product.sale_unit_price ?? product.prix_unitaire_vente ?? product.prix_unitaire ?? 0);
         const coefficient = Number(item?.coefficient || 0);
-        const total = Number(product.total || (unitPrice * coefficient * quantity));
+        const unitPrice = Number(product.sale_unit_price ?? product.prix_unitaire_vente ?? product.prix_unitaire ?? 0)*coefficient;
+        const total = Number(product.total || (unitPrice * quantity));
         const explanation = item?.explanation || '';
         const explanationValue = escapeHtml(explanation);
         const explanationEmpty = !String(explanation).trim();
@@ -884,6 +905,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const productId= event.target.value;
             changeExplanationInputValue(productId);
         });
+    }
+
+    // Coefficient : le prix unitaire affiché suit le coefficient saisi
+    const productCoefficientInput = document.getElementById('productCoefficient');
+    if (productCoefficientInput) {
+        productCoefficientInput.addEventListener('input', updateUnitPriceFromCoefficient);
     }
 
     // Add product button

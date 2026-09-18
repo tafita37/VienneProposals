@@ -858,27 +858,15 @@ def save_selected_products_api(request):
         if product_id <= 0 or quantity <= 0:
             return
 
-            if prix_unitaire_achat <= 0 or not designation or not category_name:
-                product = Product.objects.select_related('unit').prefetch_related('categories').filter(
-                    id=product_id
-                ).first()
-            if product is not None:
-                designation = designation or str(product.designation)
-                category_name = category_name or _product_category_label(product)
-                if prix_unitaire_vente <= 0:
-                    prix_unitaire_vente = float(product.sale_unit_price)
-                if prix_unitaire_achat <= 0:
-                    prix_unitaire_achat = float(product.purchase_unit_price)
-
         proposal_by_product[product_id] = {
             'product': {
                 'id': product_id,
                 'designation': designation,
                 'category_name': category_name,
-                'prix_unitaire_vente': prix_unitaire_vente,
+                'prix_unitaire_vente': prix_unitaire_vente*coefficient,
                 'prix_unitaire_achat': prix_unitaire_achat,
                 'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
-                'sale_unit_price': prix_unitaire_vente,
+                'sale_unit_price': prix_unitaire_vente*coefficient,
                 'purchase_unit_price': prix_unitaire_achat,
             },
             'coefficient': max(0.0, coefficient),
@@ -930,7 +918,7 @@ def save_selected_products_api(request):
                 'category_name': _product_category_label(product),
                 'sale_unit_price': sale_unit_price,
                 'purchase_unit_price': purchase_unit_price,
-                'prix_unitaire_vente': sale_unit_price,
+                'prix_unitaire_vente': sale_unit_price*coefficient,
                 'prix_unitaire_achat': purchase_unit_price,
                 'total': product_total,
             },
@@ -989,24 +977,12 @@ def save_selected_products_edit_api(request):
         if product_id <= 0 or quantity <= 0:
             return
 
-            if prix_unitaire_achat <= 0 or not designation or not category_name:
-                product = Product.objects.select_related('unit').prefetch_related('categories').filter(
-                    id=product_id
-                ).first()
-            if product is not None:
-                designation = designation or str(product.designation)
-                category_name = category_name or _product_category_label(product)
-                if prix_unitaire_vente <= 0:
-                    prix_unitaire_vente = float(product.sale_unit_price)
-                if prix_unitaire_achat <= 0:
-                    prix_unitaire_achat = float(product.purchase_unit_price)
-
         proposal_by_product[product_id] = {
             'product': {
                 'id': product_id,
                 'designation': designation,
                 'category_name': category_name,
-                'prix_unitaire_vente': prix_unitaire_vente,
+                'prix_unitaire_vente': prix_unitaire_vente*coefficient,
                 'prix_unitaire_achat': prix_unitaire_achat,
                 'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
                 'sale_unit_price': prix_unitaire_vente,
@@ -1061,7 +1037,7 @@ def save_selected_products_edit_api(request):
                 'category_name': _product_category_label(product),
                 'sale_unit_price': sale_unit_price,
                 'purchase_unit_price': purchase_unit_price,
-                'prix_unitaire_vente': sale_unit_price,
+                'prix_unitaire_vente': sale_unit_price*coefficient,
                 'prix_unitaire_achat': purchase_unit_price,
                 'total': product_total,
             },
@@ -1299,6 +1275,53 @@ def remove_selected_product_api(request):
             filtered_proposal.append(item)
 
     request.session['proposal'] = filtered_proposal
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Produit supprimé avec succès.',
+        'proposal': filtered_proposal,
+        'proposal_total': _compute_proposal_total(filtered_proposal),
+    })
+
+@require_POST
+@user_required
+def remove_selected_product_edit_api(request):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Payload JSON invalide.'}, status=400)
+
+    try:
+        product_id = int(payload.get('product_id', 0))
+    except (TypeError, ValueError):
+        product_id = 0
+
+    if product_id <= 0:
+        return JsonResponse({'success': False, 'message': 'product_id invalide.'}, status=400)
+
+    existing_proposal = request.session.get('proposal_edit', [])
+    if not isinstance(existing_proposal, list):
+        existing_proposal = []
+
+    filtered_proposal = []
+    for item in existing_proposal:
+        if not isinstance(item, dict):
+            continue
+
+        product = item.get('product', {})
+        current_product_id = 0
+
+        if isinstance(product, dict):
+            try:
+                current_product_id = int(product.get('id', 0))
+            except (TypeError, ValueError):
+                current_product_id = 0
+
+        if current_product_id != product_id:
+            filtered_proposal.append(item)
+
+    request.session['proposal_edit'] = filtered_proposal
     request.session.modified = True
 
     return JsonResponse({
