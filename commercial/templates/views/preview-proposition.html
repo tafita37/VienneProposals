@@ -513,7 +513,8 @@
             <tr>
                 <th>Produit</th>
                 <th>Quantité</th>
-                <th>Total</th>
+                <th class="price">Prix Unitaire</th>
+                <th class="price">Total</th>
             </tr>
         </thead>
 
@@ -521,13 +522,14 @@
             {% if summary_categories %}
             {% for category in summary_categories %}
             <tr class="section-row">
-                <td colspan="3">{{ category.name }}</td>
+                <td colspan="4">{{ category.name }}</td>
             </tr>
             {% for item in category.items %}
             <tr class="item-row">
                 <td>{{ item.designation }}</td>
                 <td>{{ item.quantity|floatformat:2 }}</td>
-                <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
+                <td class="price">{{ item.sale_unit_price|floatformat:2 }}&nbsp;€</td>
+                <td class="price">{{ item.total|floatformat:2 }}&nbsp;€</td>
             </tr>
             <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
                 <td colspan="5" style="padding: 1rem;">
@@ -538,7 +540,7 @@
             </tr>
             {% endfor %}
             <tr class="subtotal-row">
-                <td colspan="2">Sous-total {{ category.name }}</td>
+                <td colspan="3">Sous-total {{ category.name }}</td>
                 <td>{{ category.total|floatformat:2 }}&nbsp;€</td>
             </tr>
             {% endfor %}

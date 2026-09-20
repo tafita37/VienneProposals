@@ -178,6 +178,10 @@
       text-align: left;
     }
 
+    .price {
+      text-align: right;
+    }
+
     thead th:last-child { text-align: right; }
     thead th:nth-child(2) { text-align: center; }
 
@@ -347,8 +351,8 @@
             <tr>
               <th>Produit</th>
               <th>Quantité</th>
-              <th>Prix Unitaire</th>
-              <th>Total</th>
+              <th class="price">Prix Unitaire</th>
+              <th class="price">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -362,8 +366,8 @@
                   <tr class="item-row">
                     <td>{{ item.designation }}</td>
                     <td>{{ item.quantity|floatformat:2 }}</td>
-                    <td>{{ item.sale_unit_price|floatformat:2 }}</td>
-                    <td>{{ item.total|floatformat:2 }}&nbsp;€</td>
+                    <td class="price">{{ item.sale_unit_price|floatformat:2 }}&nbsp;€</td>
+                    <td class="price">{{ item.total|floatformat:2 }}&nbsp;€</td>
                   </tr>
                   {% if item.explanation %}
                   <tr style="border-bottom: 2px solid #e0e0e0;">
