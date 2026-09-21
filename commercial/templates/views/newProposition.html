@@ -227,7 +227,11 @@
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.category_name }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.designation }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.quantity }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <span data-role="unit-price-text">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</span>
+                        <input type="number" data-role="unit-price-input" step="0.01" min="0"
+                            style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 110px; font-size: 0.9rem;">
+                    </td>
                     <td
                         style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">
                         {{ proposal.product.total|floatformat:2 }} €</td>
