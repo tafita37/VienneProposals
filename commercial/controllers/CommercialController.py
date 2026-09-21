@@ -72,6 +72,35 @@ def _compute_proposal_total(list_proposal):
     return total
 
 
+def _resolve_line_unit_price(raw_item, existing_item, product, coefficient):
+    """Prix unitaire d'une ligne : saisie manuelle prioritaire, sinon prix catalogue.
+
+    Le prix affiche vaut toujours prix unitaire x coefficient : un prix saisi a la
+    main remplace donc le prix catalogue et ramene le coefficient a 1. Il reste
+    conserve tant que la ligne n'est pas re-enregistree avec un coefficient.
+    Retourne (prix_unitaire, coefficient, prix_modifie_manuellement).
+    """
+    catalog_unit_price = max(0.0, float(product.sale_unit_price))
+    raw_unit_price = raw_item.get('unit_price', raw_item.get('sale_unit_price'))
+
+    if raw_unit_price not in (None, ''):
+        try:
+            return max(0.0, float(raw_unit_price)), 1.0, True
+        except (TypeError, ValueError):
+            pass
+
+    if existing_item.get('price_overridden') and 'coefficient' not in raw_item:
+        existing_product = existing_item.get('product') or {}
+        try:
+            existing_unit_price = max(0.0, float(existing_product.get('sale_unit_price', catalog_unit_price)))
+        except (TypeError, ValueError):
+            existing_unit_price = catalog_unit_price
+
+        return existing_unit_price, coefficient, True
+
+    return catalog_unit_price, coefficient, False
+
+
 def _proposal_item_from_proposal_product(proposal_product):
     product = getattr(proposal_product, 'product', None)
     sale_unit_price = max(0.0, float(getattr(proposal_product, 'sale_unit_price', 0) or 0))
@@ -102,7 +131,7 @@ def _proposal_item_from_proposal_product(proposal_product):
             'category_name': category_name,
             'sale_unit_price': sale_unit_price,
             'purchase_unit_price': purchase_unit_price,
-            'prix_unitaire_vente': sale_unit_price,
+            'prix_unitaire_vente': sale_unit_price * coefficient,
             'prix_unitaire_achat': purchase_unit_price,
             'total': sale_unit_price * coefficient * quantity,
         },
@@ -863,15 +892,16 @@ def save_selected_products_api(request):
                 'id': product_id,
                 'designation': designation,
                 'category_name': category_name,
-                'prix_unitaire_vente': prix_unitaire_vente*coefficient,
+                'prix_unitaire_vente': prix_unitaire_vente * max(0.0, coefficient),
                 'prix_unitaire_achat': prix_unitaire_achat,
                 'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
-                'sale_unit_price': prix_unitaire_vente*coefficient,
+                'sale_unit_price': prix_unitaire_vente,
                 'purchase_unit_price': prix_unitaire_achat,
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
-            'explanation': raw_item.get('explanation', '').strip(),
+            'explanation': str(raw_item.get('explanation', '') or '').strip(),
+            'price_overridden': bool(raw_item.get('price_overridden', False)),
         }
 
     existing_proposal = request.session.get('proposal', [])
@@ -907,8 +937,10 @@ def save_selected_products_api(request):
         if not product:
             continue
 
-        sale_unit_price = max(0.0, float(product.sale_unit_price))
         purchase_unit_price = max(0.0, float(product.purchase_unit_price))
+        sale_unit_price, coefficient, price_overridden = _resolve_line_unit_price(
+            item, existing_item, product, coefficient
+        )
         product_total = sale_unit_price * max(0.0, coefficient) * max(0.0, quantity)
 
         proposal_by_product[product_id] = {
@@ -918,13 +950,14 @@ def save_selected_products_api(request):
                 'category_name': _product_category_label(product),
                 'sale_unit_price': sale_unit_price,
                 'purchase_unit_price': purchase_unit_price,
-                'prix_unitaire_vente': sale_unit_price*coefficient,
+                'prix_unitaire_vente': sale_unit_price * max(0.0, coefficient),
                 'prix_unitaire_achat': purchase_unit_price,
                 'total': product_total,
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
             'explanation': str(item.get('explanation', existing_item.get('explanation', '')) or '').strip(),
+            'price_overridden': price_overridden,
         }
 
     request.session['proposal'] = list(proposal_by_product.values())
@@ -982,7 +1015,7 @@ def save_selected_products_edit_api(request):
                 'id': product_id,
                 'designation': designation,
                 'category_name': category_name,
-                'prix_unitaire_vente': prix_unitaire_vente*coefficient,
+                'prix_unitaire_vente': prix_unitaire_vente * max(0.0, coefficient),
                 'prix_unitaire_achat': prix_unitaire_achat,
                 'total': prix_unitaire_vente * max(0.0, coefficient) * max(0.0, quantity),
                 'sale_unit_price': prix_unitaire_vente,
@@ -990,7 +1023,8 @@ def save_selected_products_edit_api(request):
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
-            'explanation': raw_item.get('explanation', '').strip(),
+            'explanation': str(raw_item.get('explanation', '') or '').strip(),
+            'price_overridden': bool(raw_item.get('price_overridden', False)),
         }
 
     existing_proposal = request.session.get('proposal_edit', [])
@@ -1026,8 +1060,10 @@ def save_selected_products_edit_api(request):
         if not product:
             continue
 
-        sale_unit_price = max(0.0, float(product.sale_unit_price))
         purchase_unit_price = max(0.0, float(product.purchase_unit_price))
+        sale_unit_price, coefficient, price_overridden = _resolve_line_unit_price(
+            item, existing_item, product, coefficient
+        )
         product_total = sale_unit_price * max(0.0, coefficient) * max(0.0, quantity)
 
         proposal_by_product[product_id] = {
@@ -1037,13 +1073,14 @@ def save_selected_products_edit_api(request):
                 'category_name': _product_category_label(product),
                 'sale_unit_price': sale_unit_price,
                 'purchase_unit_price': purchase_unit_price,
-                'prix_unitaire_vente': sale_unit_price*coefficient,
+                'prix_unitaire_vente': sale_unit_price * max(0.0, coefficient),
                 'prix_unitaire_achat': purchase_unit_price,
                 'total': product_total,
             },
             'coefficient': max(0.0, coefficient),
             'quantity': max(0.0, quantity),
             'explanation': str(item.get('explanation', existing_item.get('explanation', '')) or '').strip(),
+            'price_overridden': price_overridden,
         }
 
     request.session['proposal_edit'] = list(proposal_by_product.values())

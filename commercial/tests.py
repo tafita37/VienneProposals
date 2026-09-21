@@ -424,6 +424,110 @@ class CommercialIntegrationTests(TestCase):
 		self.assertEqual(len(session['proposal']), 1)
 		self.assertEqual(session['proposal'][0]['product']['id'], self.product.id)
 
+	def test_save_selected_products_api_applies_manual_unit_price(self):
+		# Un prix unitaire saisi a la main remplace le prix catalogue et ramene le coefficient a 1.
+		self.client.force_login(self.user)
+
+		self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({'selected_products': [{'product_id': self.product.id, 'coefficient': 2, 'quantity': 3}]}),
+			content_type='application/json',
+		)
+
+		response = self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({
+				'selected_products': [{
+					'product_id': self.product.id,
+					'explanation': 'Prix negocie',
+					'unit_price': 150,
+				}],
+			}),
+			content_type='application/json',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		line = response.json()['proposal'][0]
+		self.assertEqual(line['product']['sale_unit_price'], 150.0)
+		self.assertEqual(line['product']['prix_unitaire_vente'], 150.0)
+		self.assertEqual(line['coefficient'], 1.0)
+		self.assertEqual(line['quantity'], 3.0)
+		self.assertEqual(line['product']['total'], 450.0)
+		self.assertEqual(line['explanation'], 'Prix negocie')
+		self.assertEqual(self.client.session['proposal'][0]['product']['sale_unit_price'], 150.0)
+
+	def test_manual_unit_price_survives_a_later_explanation_save(self):
+		# Une modification d'explication seule ne doit pas ramener le prix catalogue.
+		self.client.force_login(self.user)
+
+		self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({
+				'selected_products': [{'product_id': self.product.id, 'coefficient': 2, 'quantity': 3, 'unit_price': 150}],
+			}),
+			content_type='application/json',
+		)
+
+		response = self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({
+				'selected_products': [{'product_id': self.product.id, 'explanation': 'Autre commentaire'}],
+			}),
+			content_type='application/json',
+		)
+
+		line = response.json()['proposal'][0]
+		self.assertEqual(line['product']['sale_unit_price'], 150.0)
+		self.assertEqual(line['product']['total'], 450.0)
+		self.assertEqual(line['explanation'], 'Autre commentaire')
+
+	def test_resaving_a_line_with_a_coefficient_restores_the_catalog_price(self):
+		# Reajouter le produit depuis le formulaire (avec coefficient) repart du prix catalogue.
+		self.client.force_login(self.user)
+
+		self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({
+				'selected_products': [{'product_id': self.product.id, 'coefficient': 2, 'quantity': 3, 'unit_price': 150}],
+			}),
+			content_type='application/json',
+		)
+
+		response = self.client.post(
+			'/com/api/proposals/selected-products/',
+			data=json.dumps({'selected_products': [{'product_id': self.product.id, 'coefficient': 2, 'quantity': 3}]}),
+			content_type='application/json',
+		)
+
+		line = response.json()['proposal'][0]
+		self.assertEqual(line['product']['sale_unit_price'], 90.0)
+		self.assertEqual(line['coefficient'], 2.0)
+		self.assertEqual(line['product']['total'], 540.0)
+
+	def test_save_selected_products_edit_api_applies_manual_unit_price(self):
+		# Meme comportement cote modification de proposition.
+		self.client.force_login(self.user)
+
+		self.client.post(
+			'/com/api/proposals/selected-products/edit/',
+			data=json.dumps({'selected_products': [{'product_id': self.product.id, 'coefficient': 2, 'quantity': 3}]}),
+			content_type='application/json',
+		)
+
+		response = self.client.post(
+			'/com/api/proposals/selected-products/edit/',
+			data=json.dumps({
+				'selected_products': [{'product_id': self.product.id, 'unit_price': 150}],
+			}),
+			content_type='application/json',
+		)
+
+		line = response.json()['proposal'][0]
+		self.assertEqual(line['product']['sale_unit_price'], 150.0)
+		self.assertEqual(line['coefficient'], 1.0)
+		self.assertEqual(line['product']['total'], 450.0)
+		self.assertEqual(self.client.session['proposal_edit'][0]['product']['sale_unit_price'], 150.0)
+
 	def test_save_options_then_save_draft_creates_proposal_and_rows(self):
 		self.client.force_login(self.user)
 		session = self.client.session

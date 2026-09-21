@@ -431,7 +431,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${categoryName}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${designation}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity}</td>
-                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${unitPrice.toFixed(2)} €</td>
+                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                    <span data-role="unit-price-text">${unitPrice.toFixed(2)} €</span>
+                    <input type="number" data-role="unit-price-input" step="0.01" min="0" style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 110px; font-size: 0.9rem;">
+                </td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent);">${total.toFixed(2)} €</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                     <button type="button" data-action="remove-product" data-product-id="${productId}" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem;">🗑️</button>
@@ -470,6 +473,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     };
 
+    const getProductRowForExplanationRow = (explanationRow) => {
+        const previousRow = explanationRow?.previousElementSibling;
+        if (!previousRow || previousRow.classList.contains('product-explanation-row')) {
+            return null;
+        }
+
+        return previousRow;
+    };
+
+    const setUnitPriceEditingState = (explanationRow, isEditing) => {
+        const productRow = getProductRowForExplanationRow(explanationRow);
+        if (!productRow) {
+            return;
+        }
+
+        const priceText = productRow.querySelector('[data-role="unit-price-text"]');
+        const priceInput = productRow.querySelector('[data-role="unit-price-input"]');
+
+        if (priceInput) {
+            // La saisie repart toujours du prix affiche, a l'ouverture comme a l'annulation
+            priceInput.value = parseAmountFromText(priceText?.textContent || '0').toFixed(2);
+            priceInput.style.display = isEditing ? '' : 'none';
+        }
+
+        if (priceText) {
+            priceText.style.display = isEditing ? 'none' : '';
+        }
+    };
+
     const setExplanationEditingState = (row, isEditing) => {
         if (!row) {
             return;
@@ -485,13 +517,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (edit) {
             edit.style.display = isEditing ? '' : 'none';
         }
+
+        setUnitPriceEditingState(row, isEditing);
     };
 
-    const saveProductExplanation = async (row, explanation) => {
+    const saveProductExplanation = async (row, explanation, unitPrice) => {
         const productId = Number(row?.dataset.productId || 0);
 
         if (!productId) {
             throw new Error('Produit invalide.');
+        }
+
+        const selectedProduct = {
+            product_id: productId,
+            explanation,
+        };
+
+        if (Number.isFinite(unitPrice)) {
+            selectedProduct.unit_price = unitPrice;
         }
 
         const response = await fetch('/com/api/proposals/selected-products/edit/', {
@@ -501,12 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'X-CSRFToken': getCsrfToken(),
             },
             body: JSON.stringify({
-                selected_products: [
-                    {
-                        product_id: productId,
-                        explanation,
-                    },
-                ],
+                selected_products: [selectedProduct],
             }),
         });
 
@@ -1021,9 +1059,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                const priceInput = getProductRowForExplanationRow(explanationRow)?.querySelector('[data-role="unit-price-input"]');
+                let unitPrice;
+
+                if (priceInput) {
+                    unitPrice = Number.parseFloat(String(priceInput.value || '').replace(',', '.').trim());
+
+                    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+                        alert('Veuillez saisir un prix unitaire valide.');
+                        priceInput.focus();
+                        return;
+                    }
+                }
+
                 saveButton.disabled = true;
                 try {
-                    const data = await saveProductExplanation(explanationRow, explanationInput.value || '');
+                    const data = await saveProductExplanation(explanationRow, explanationInput.value || '', unitPrice);
 
                     if (Array.isArray(data?.proposal)) {
                         refreshDerivedProposalViews(data.proposal);
@@ -1038,8 +1089,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         refreshAddedProductsTotal();
                     }
                 } catch (error) {
-                    console.error('Erreur lors de la modification de l\'explication :', error);
-                    alert('Erreur lors de la modification de l\'explication.');
+                    console.error('Erreur lors de la modification du produit :', error);
+                    alert(error.message || 'Erreur lors de la modification du produit.');
                 } finally {
                     saveButton.disabled = false;
                 }
