@@ -101,6 +101,37 @@ def build_proposal_pdf(proposal, base_url):
     for page in second_reader.pages:
         writer.add_page(page)
 
+    # Numérotation de toutes les pages (PDF généré + pages ajoutées)
+    # Pages générées : numéro au-dessus du footer ; pages ajoutées (CGV) : numéro plus bas
+    main_pages_count = len(main_reader.pages)
+    second_pages_count = len(second_reader.pages)
+    overlay_html = (
+        '<div class="page"></div>' * main_pages_count
+        + '<div class="page annex"></div>' * second_pages_count
+    )
+    overlay_css = CSS(string='''
+        @page {
+            size: A4;
+            margin: 0 0 22mm 0;
+            @bottom-center {
+                content: "Page " counter(page) " / " counter(pages);
+                vertical-align: top;
+                font-family: 'DejaVu Sans', Arial, sans-serif;
+                font-size: 12px;
+            }
+        }
+        @page annex {
+            margin: 0 0 10mm 0;
+        }
+        .page + .page { break-before: page; }
+        .annex { page: annex; }
+    ''')
+    overlay_bytes = HTML(string=overlay_html).write_pdf(stylesheets=[overlay_css])
+    overlay_reader = PdfReader(io.BytesIO(overlay_bytes))
+
+    for page, overlay_page in zip(writer.pages, overlay_reader.pages):
+        page.merge_page(overlay_page)
+
     # Écriture du résultat final
     output_buffer = io.BytesIO()
     writer.write(output_buffer)
