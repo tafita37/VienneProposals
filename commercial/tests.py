@@ -13,12 +13,22 @@ from time import perf_counter
 from authentification.metier.AdminUser import AdminUser
 from authentification.metier.User import User
 from commercial.controllers import CommercialController, StatController
-from commercial.controllers.CommercialController import (
-	_compute_proposal_total,
-	_product_category_label,
-	_proposal_item_from_proposal_product,
-	_proposal_rows_from_session,
+from commercial.controllers.ProposalService import (
+	billable_lines,
+	lines_total,
+	product_category_label,
+	proposal_product_line,
+	session_item_from_line,
+	session_lines,
 )
+
+
+def _compute_proposal_total(list_proposal):
+	return lines_total(session_lines(list_proposal))
+
+
+def _proposal_item_from_proposal_product(proposal_product):
+	return session_item_from_line(proposal_product_line(proposal_product))
 from commercial.controllers.StatController import (
 	_build_profit_by_month,
 	_build_profit_by_month_for_commercial,
@@ -153,11 +163,11 @@ class CommercialModelAndHelperTests(TestCase):
 
 	def test_product_category_label_prefers_category_names_then_first_category(self):
 		# The label helper should use the richest information available and fall back safely.
-		self.assertEqual(_product_category_label(None), 'Non catégorisé')
-		self.assertEqual(_product_category_label(self.product), 'Alpha, Beta')
+		self.assertEqual(product_category_label(None), 'Non catégorisé')
+		self.assertEqual(product_category_label(self.product), 'Alpha, Beta')
 
 		no_multi_category_product = SimpleNamespace(category_names='', category=SimpleNamespace(name='Cuisine'))
-		self.assertEqual(_product_category_label(no_multi_category_product), 'Cuisine')
+		self.assertEqual(product_category_label(no_multi_category_product), 'Cuisine')
 
 	def test_compute_proposal_total_supports_multiple_input_shapes(self):
 		# The total helper accepts precomputed totals or recomputes them from unit price, coefficient and quantity.
@@ -193,7 +203,7 @@ class CommercialModelAndHelperTests(TestCase):
 			{'product': {'id': self.product.id}, 'quantity': 'bad', 'coefficient': 1.5},
 		]
 
-		proposal_rows = _proposal_rows_from_session(session_proposal)
+		proposal_rows = billable_lines(session_proposal)
 
 		self.assertEqual(len(proposal_rows), 2)
 		self.assertEqual(proposal_rows[0]['product_id'], self.product.id)
@@ -1483,12 +1493,12 @@ class CommercialEdgeCaseTests(TestCase):
 
 	def test_proposal_rows_from_session_with_empty_list(self):
 		# _proposal_rows_from_session avec liste vide.
-		result = _proposal_rows_from_session([])
+		result = billable_lines([])
 		self.assertEqual(len(result), 0)
 
 	def test_proposal_rows_from_session_with_missing_fields(self):
 		# _proposal_rows_from_session avec champs manquants.
-		result = _proposal_rows_from_session([
+		result = billable_lines([
 			{'product': {'id': self.product.id}},  # Manque quantity, coefficient
 			{'product': {'id': self.product.id}, 'quantity': 1},  # Manque coefficient
 		])

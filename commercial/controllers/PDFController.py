@@ -7,77 +7,26 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pypdf import PdfReader, PdfWriter
 
+from commercial.controllers.ProposalService import build_summary, multiline_items, proposal_lines, tva_amount
 from commercial.metier.CommercialProposal import CommercialProposal
 from proposal import settings
 
 
-def _build_summary_categories(proposal):
-    proposal_total = 0.0
-    summary_by_category = {}
-
-    proposal_products = proposal.proposal_products.select_related('product').prefetch_related('product__categories').all()
-
-    for proposal_product in proposal_products:
-        product = proposal_product.product
-        category_name = 'Non catégorisé'
-        designation = ''
-        quantity = 0.0
-        coefficient = 0.0
-        sale_unit_price = 0.0
-        product_total = 0.0
-        explanation = str(proposal_product.explanation or '').strip()
-
-        if product is not None:
-            try:
-                category_name = str(product.category_names or product.category_name or '').strip() or 'Non catégorisé'
-                designation = str(product.designation or '').strip()
-                quantity = float(proposal_product.quantity or 0)
-                coefficient = float(proposal_product.coefficient or 0)
-                sale_unit_price = float(proposal_product.sale_unit_price or product.sale_unit_price or 0)
-                product_total = float(proposal_product.quantity or 0) * float(proposal_product.coefficient or 0) * sale_unit_price
-            except (TypeError, ValueError):
-                product_total = 0.0
-
-        product_total = max(0.0, product_total)
-        proposal_total += product_total
-
-        if category_name not in summary_by_category:
-            summary_by_category[category_name] = {
-                'name': category_name,
-                'items': [],
-                'total': 0.0,
-            }
-
-        summary_by_category[category_name]['items'].append({
-            'designation': designation,
-            'quantity': max(0.0, quantity),
-            'sale_unit_price': max(0.0, sale_unit_price),
-            'coefficient': max(0.0, coefficient),
-            'total': product_total,
-            'explanation': explanation,
-        })
-        summary_by_category[category_name]['total'] += product_total
-
-    return list(summary_by_category.values()), proposal_total
-
 def build_proposal_pdf(proposal, base_url):
     """Génère le PDF complet d'une proposition (page générée + PDF annexe) et renvoie ses octets."""
-    summary_categories, proposal_total = _build_summary_categories(proposal)
+    summary_categories, proposal_total = build_summary(proposal_lines(proposal))
     include_tva = float(proposal.amount_ttc or 0) > float(proposal.amount_ht or 0)
-    tva_amount = proposal_total * 0.2 if include_tva else 0.0
-    total_ttc = proposal_total + tva_amount
-    no_included = (proposal.no_included or '').replace('- ', '').split('\\n')
-    cgv = (proposal.cgv or '').replace('- ', '').split('\\n')
+    amount_tva = tva_amount(proposal_total, include_tva)
 
     context = {
         'proposal': proposal,
         'summary_categories': summary_categories,
         'proposal_total': proposal_total,
-        'tva_amount': tva_amount,
-        'total_ttc': total_ttc,
+        'tva_amount': amount_tva,
+        'total_ttc': proposal_total + amount_tva,
         'include_tva': include_tva,
-        'no_included': no_included,
-        'cgv': cgv,
+        'no_included': multiline_items(proposal.no_included),
+        'cgv': multiline_items(proposal.cgv),
     }
 
     # Génération du PDF principal (page 1)
@@ -112,7 +61,7 @@ def build_proposal_pdf(proposal, base_url):
     overlay_css = CSS(string='''
         @page {
             size: A4;
-            margin: 0 0 22mm 0;
+            margin: 0 0 20mm 0;
             @bottom-center {
                 content: "Page " counter(page) " / " counter(pages);
                 vertical-align: top;

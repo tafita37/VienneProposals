@@ -264,6 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewLinks = document.querySelectorAll('.js-preview-proposal-link');
     let isClientEditMode = false;
 
+    // URLs des API de la proposition : différentes en création et en modification (fournies par le template)
+    const apiUrlsElement = document.getElementById('proposal-api-urls');
+    const apiUrls = apiUrlsElement ? JSON.parse(apiUrlsElement.textContent || '{}') : {};
+
     const getCsrfToken = () => {
         const cookies = document.cookie ? document.cookie.split(';') : [];
         for (const cookieEntry of cookies) {
@@ -537,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedProduct.unit_price = unitPrice;
         }
 
-        const response = await fetch('/com/api/proposals/selected-products/', {
+        const response = await fetch(apiUrls.selected_products, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -800,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const includeTax = includeTaxInput ? includeTaxInput.checked : true;
 
-        const response = await fetch('/com/api/proposals/options/', {
+        const response = await fetch(apiUrls.options, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -965,7 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await fetch('/com/api/proposals/selected-products/', {
+                const response = await fetch(apiUrls.selected_products, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1111,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             removeButton.disabled = true;
 
             try {
-                const response = await fetch('/com/api/proposals/remove-product/', {
+                const response = await fetch(apiUrls.remove_product, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1167,14 +1171,8 @@ document.addEventListener('DOMContentLoaded', () => {
             linkElement.addEventListener('click', async (event) => {
                 event.preventDefault();
 
-                const href = linkElement.getAttribute('href') || '/com/preview_proposition_page/';
+                const href = linkElement.getAttribute('href') || apiUrls.preview;
                 const previewUrl = new URL(href, window.location.origin);
-                const clientId = clientSelect ? String(clientSelect.value || '').trim() : '';
-                const dateProposition = dateProposalInput ? String(dateProposalInput.value || '').trim() : '';
-                const expirationDate = expirationDateInput ? String(expirationDateInput.value || '').trim() : '';
-                const includeTax = includeTaxInput ? includeTaxInput.checked : true;
-                const projectName = projectNameInput ? String(projectNameInput.value || '').trim() : '';
-                const installationAddress = installationAddressInput ? String(installationAddressInput.value || '').trim() : '';
 
                 linkElement.style.pointerEvents = 'none';
 

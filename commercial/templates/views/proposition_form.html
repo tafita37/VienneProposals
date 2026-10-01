@@ -4,18 +4,18 @@
 
 {% load l10n %}
 
-{% block title %}Modifier Proposition - Vienne Agencement{% endblock %}
+{% block title %}{% if is_edit %}Modifier Proposition{% else %}Nouvelle Proposition{% endif %} - Vienne Agencement{% endblock %}
 
-{% block header_title %}Nouvelle proposition{% endblock %}
+{% block header_title %}{% if is_edit %}Modifier la proposition{% else %}Nouvelle proposition{% endif %}{% endblock %}
 
-{% block header_subtitle %}Créez une nouvelle proposition commerciale{% endblock %}
+{% block header_subtitle %}{% if is_edit %}Modifiez votre brouillon de proposition commerciale{% else %}Créez une nouvelle proposition commerciale{% endif %}{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{% static 'css/pages/newProposition.css' %}">
 {% endblock %}
 
 {% block js %}
-<script src="{% static 'js/pages/editProposition.js' %}"></script>
+<script src="{% static 'js/pages/proposition-form.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -137,7 +137,6 @@
                 value="{{ proposal_expiration_date }}"
                 style="max-width: 100%; margin-right: 0.75rem; cursor: pointer;">
         </div>
-        
         <div style="margin-bottom: 1rem;">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" id="includeTax" style="margin-right: 0.75rem; cursor: pointer;" {% if proposal_include_tva %}checked{% endif %}>
@@ -145,7 +144,7 @@
             </label>
         </div>
         <div>
-            <a href="{% url 'appercu_proposition_page_edit' %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
+            <a href="{% url preview_url_name %}" class="btn btn-primary js-preview-proposal-link" style="width: 100%; text-align: center;">Aperçu
                 Proposition</a>
         </div>
     </div>
@@ -153,7 +152,7 @@
 <!-- SECTION SAISIE PRODUITS -->
 <div class="product-input-section"
     style="background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow);">
-    <h3 style="margin-bottom: 1.5rem; color: var(--primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
         <span>📝</span> Saisie des produits
     </h3>
 
@@ -196,7 +195,7 @@
 
         <div>
             <button id="addProductBtn"
-                style="background: var(--success); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; height: 45px; white-space: nowrap;">
+                style="background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; height: 45px; white-space: nowrap;">
                 ➕ Ajouter
             </button>
         </div>
@@ -320,8 +319,9 @@
 </div>
 <div class="action-buttons">
     <!-- <a href="propositions.html" class="btn btn-secondary">← Retour</a> -->
-    <a href="{% url 'appercu_proposition_page_edit' %}" class="btn btn-primary js-preview-proposal-link">Aperçu et valider</a>
+    <a href="{% url preview_url_name %}" class="btn btn-primary js-preview-proposal-link">Aperçu et valider</a>
 </div>
 
 {{ proposal|json_script:"initial-proposal-data" }}
+{{ api_urls|json_script:"proposal-api-urls" }}
 {% endblock %}
