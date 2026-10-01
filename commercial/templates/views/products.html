@@ -2,8 +2,6 @@
 
 {% load static %}
 
-{% load l10n %}
-
 {% block title %}Produits - Vienne Agencement{% endblock %}
 
 {% block header_title %}Produits{% endblock %}
@@ -38,14 +36,9 @@
         <div class="coefficient-summary__actions">
             <div class="coefficient-summary__value">
                 <span class="coefficient-summary__label">Coefficient actuel</span>
-                <strong id="globalCoefficientValue" class="coefficient-summary__number">{{ global_coefficient|default:1.30|floatformat:2 }}</strong>
+                <strong id="globalCoefficientValue" class="coefficient-summary__number">{{ global_coefficient|floatformat:2 }}</strong>
             </div>
-            <button
-                id="editGlobalCoefficientBtn"
-                type="button"
-                class="btn btn-primary coefficient-summary__action"
-                data-current-coefficient="{{ global_coefficient|default:1.30|floatformat:2 }}"
-            >
+            <button id="editGlobalCoefficientBtn" type="button" class="btn btn-primary coefficient-summary__action">
                 Modifier le coefficient
             </button>
         </div>
@@ -54,7 +47,7 @@
 </div>
 
 <div class="card">
-    <div id="productsMessage" class="form-message" aria-live="polite"></div>
+    <div id="productsMessage" class="form-message{% if error %} error{% endif %}" aria-live="polite">{% if error == 'used' %}Ce produit ne peut pas être supprimé car il est utilisé dans des propositions ou des mouvements de stock.{% endif %}</div>
     <div class="filters">
         <div class="filter-group">
             <label for="categoryFilter">Catégorie</label>
@@ -72,99 +65,65 @@
     </div>
 
     <div style="overflow-x: auto;">
-        <table id="productsTable" style="width: 100%; border-collapse: collapse;">
+        <table
+            id="productsTable"
+            class="products-table"
+            data-api-url="{% url 'admin_products_api' %}"
+            data-delete-url="{% url 'delete_product' %}"
+            data-explanation-url="{% url 'save_explanation_product_admin_api' %}"
+            data-coefficient-url="{% url 'update_global_product_coefficient' %}"
+        >
             <thead>
-                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
-                    <th style="padding: 0.75rem; text-align: left;">Désignation</th>
-                    <th style="padding: 0.75rem; text-align: left;">Catégorie</th>
-                    <th style="padding: 0.75rem; text-align: left;">Unité</th>
-                    <th style="padding: 0.75rem; text-align: left;">Prix d'achat</th>
-                    <th style="padding: 0.75rem; text-align: left;">Prix de vente</th>
-                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                <tr>
+                    <th>Désignation</th>
+                    <th>Catégorie</th>
+                    <th>Unité</th>
+                    <th>Fournisseur</th>
+                    <th>Prix d'achat</th>
+                    <th>Prix de vente</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody id="productsTableBody">
-                {% for product in products %}
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.designation}}
-                    </td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.category_names|default:product.category_name|default:"Non catégorisé"}}
-                    </td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.unit.name}}
-                    </td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.purchase_unit_price|floatformat:2}} €</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        {{product.sale_unit_price|floatformat:2}} €</td>
-                    {%localize off %}
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-                        <button 
-                            class="btn btn-secondary" 
-                            style="margin-right: 0.5rem;"
-                            data-edit-product="true"
-                            data-product-id="{{ product.id }}"
-                            data-product-designation="{{ product.designation|escape }}"
-                            data-product-category-ids="{{ product.category_ids_csv|escape }}"
-                            data-product-category-names="{{ product.category_names|escape }}"
-                            data-product-unit-id="{{ product.unit.id }}"
-                            data-product-unit-name="{{ product.unit.name|escape }}"
-                            data-product-purchase-price="{{ product.purchase_unit_price }}"
-                            data-product-sale-price="{{ product.sale_unit_price }}"
-                        >
-                            ✏️
-                        </button>
-                        <a 
-                            class="btn btn-secondary js-delete-product" 
-                            style="background: var(--warning);"
-                            href="{%url 'delete_product' %}?id={{product.id}}"
-                            data-product-name="{{ product.designation }}"
-                        >
-                            🗑️
-                        </a>
-                    </td>
-                    {%endlocalize %}
-                </tr>
-                <tr class="product-explanation-row" data-product-id="{{ product.id }}" style="background-color: #fafaf8; border-bottom: 2px solid var(--border);">
-                    <td colspan="6" style="padding: 1rem;">
-                        
-                        <div data-role="explanation-view" style="border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
-                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
-                                <span style="font-weight: 600; font-size: 0.85rem; display: block;">💬 Explication</span>
-                                <button type="button" data-action="edit-explanation" data-product-id="{{ product.id }}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 4px;">
-                                    Modifier
-                                </button>
-                            </div>
-                            
-                            {% if product.explanation %}
-                            <p data-role="explanation-text" id="explanation-text{{ product.id }}" style="margin: 0; color: var(--text-dark); font-size: 0.9rem;">{{ product.explanation }}</p>
-                            {% else %}
-                            <p data-role="explanation-text" id="explanation-text{{ product.id }}" style="margin: 0; color: var(--text-light); font-size: 0.9rem; font-style: italic;">Aucune explication</p>
-                            {% endif %}
-                        </div>
-                        
-                        <div data-role="explanation-edit" style="display: none; border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-dark);">
-                            <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.35rem;">Modifier l’explication</label>
-                            <textarea data-role="explanation-input" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; resize: vertical; min-height: 70px; font-size: 0.9rem; font-family: inherit;">{{ product.explanation }}</textarea>
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
-                                <button type="button" data-action="cancel-explanation-edit" data-product-id="{{ product.id }}" style="background: none; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px;">
-                                    Annuler
-                                </button>
-                                <button type="button" data-action="save-explanation" data-product-id="{{ product.id }}" style="background: var(--success); color: white; border: none; cursor: pointer; font-size: 0.85rem; padding: 0.45rem 0.75rem; border-radius: 4px; font-weight: 600;">
-                                    Enregistrer
-                                </button>
-                            </div>
-                        </div>
-
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tbody id="productsTableBody"></tbody>
         </table>
     </div>
 </div>
+
+{{ products|json_script:"productsData" }}
+
+<template id="productRowTemplate">
+    <tr class="product-row">
+        <td data-field="designation"></td>
+        <td data-field="categories"></td>
+        <td data-field="unit"></td>
+        <td data-field="supplier"></td>
+        <td data-field="purchasePrice"></td>
+        <td data-field="salePrice"></td>
+        <td class="product-actions">
+            <button type="button" class="btn btn-secondary" data-action="edit-product" title="Modifier">✏️</button>
+            <button type="button" class="btn btn-secondary btn-delete" data-action="delete-product" title="Supprimer">🗑️</button>
+        </td>
+    </tr>
+    <tr class="product-explanation-row">
+        <td colspan="7">
+            <div class="explanation-panel" data-role="explanation-view">
+                <div class="explanation-panel__header">
+                    <span class="explanation-panel__label">💬 Explication</span>
+                    <button type="button" class="explanation-btn explanation-btn--small" data-action="edit-explanation">Modifier</button>
+                </div>
+                <p class="explanation-panel__text" data-role="explanation-text"></p>
+            </div>
+            <div class="explanation-panel" data-role="explanation-edit" hidden>
+                <label class="explanation-panel__label">Modifier l’explication</label>
+                <textarea class="explanation-panel__input" data-role="explanation-input"></textarea>
+                <div class="explanation-panel__actions">
+                    <button type="button" class="explanation-btn" data-action="cancel-explanation">Annuler</button>
+                    <button type="button" class="explanation-btn explanation-btn--save" data-action="save-explanation">Enregistrer</button>
+                </div>
+            </div>
+        </td>
+    </tr>
+</template>
 
 <div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true" style="display: none;">
     <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
@@ -172,7 +131,7 @@
         <h3 id="deleteConfirmTitle">Confirmer la suppression</h3>
         <p id="deleteConfirmText">Voulez-vous vraiment supprimer ce produit ?</p>
         <div class="delete-confirm-actions">
-            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <button type="button" class="btn btn-secondary" data-close-delete-modal="true">Annuler</button>
             <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
         </div>
     </div>
@@ -192,15 +151,7 @@
             <div class="coefficient-modal__body">
                 <div class="form-group">
                     <label for="globalCoefficientInput">Nouveau coefficient</label>
-                    <input
-                        type="number"
-                        id="globalCoefficientInput"
-                        name="coefficient"
-                        min="0"
-                        step="0.01"
-                        value="{{ product_coefficient_history.coefficient}}"
-                        required
-                    >
+                    <input type="number" id="globalCoefficientInput" name="coefficient" min="0" step="0.01" required>
                 </div>
                 <p class="coefficient-modal__hint">Exemple: 1.30 signifie que le prix de vente est calculé à partir du prix d'achat multiplié par 1.30.</p>
                 <div id="globalCoefficientModalMessage" class="form-message coefficient-message" aria-live="polite"></div>
@@ -218,29 +169,22 @@
     <div class="modal-content product-modal-content">
         <div class="modal-header">
             <h3 id="productModalTitle">Ajouter un produit</h3>
-            <button type="button" class="modal-close" onclick="closeProductModal()">✕</button>
+            <button type="button" class="modal-close" data-close-product-modal="true">✕</button>
         </div>
-        <form action="{% url 'saveProduct' %}" method="post">
+        <form id="productForm" action="{% url 'saveProduct' %}" method="post">
             {% csrf_token %}
             <input type="hidden" name="id" id="productIdInput" value="">
             <div class="modal-body">
-                <!-- <div id="productModalMessage" class="form-message" aria-live="polite"></div> -->
                 <div class="form-group">
                     <label for="productName">Désignation</label>
-                    <input 
-                        type="text" 
-                        id="productName" 
-                        placeholder="Ex. Porte battante XL" 
-                        name="designation"
-                        required
-                    />
+                    <input type="text" id="productName" placeholder="Ex. Porte battante XL" name="designation" required />
                 </div>
                 <div class="form-group">
                     <label for="productCategory">Catégories</label>
                     <div id="productCategory" class="category-picker" role="group" aria-label="Sélection des catégories">
                         {% for category in categories %}
                         <label class="category-chip">
-                            <input type="checkbox" name="category_ids" value="{{category.id}}">
+                            <input type="checkbox" name="category_ids" value="{{ category.id }}">
                             <span>{{ category.name }}</span>
                         </label>
                         {% endfor %}
@@ -249,63 +193,42 @@
                 </div>
                 <div class="form-group">
                     <label for="productUnit">Unité</label>
-                    <select 
-                        id="productUnit" 
-                        class="custom-select" 
-                        required 
-                        name="unit_id"
-                    >
+                    <select id="productUnit" class="custom-select" name="unit_id" required>
                         <option value="">Sélectionner une unité</option>
                         {% for unit in units %}
-                        <option value="{{unit.id}}">{{unit.name}}</option>
+                        <option value="{{ unit.id }}">{{ unit.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="price-fields-row">
                     <div class="form-group">
-                        <label for="productPurchasePrice">Prix unitaire d'achat (€)</label>
-                        <input 
-                            type="number" 
-                            id="productPurchasePrice" 
-                            placeholder="0.00" 
-                            min="0" 
-                            step="0.01"
-                            required 
-                            name="purchase_unit_price" 
-                        />
+                        <label for="productSupplier">Fournisseur</label>
+                        <select id="productSupplier" class="custom-select" name="supplier_id">
+                            <option value="">Sélectionner un fournisseur</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="form-group">
+                        <label for="productPurchasePrice">Prix unitaire d'achat (€)</label>
+                        <input type="number" id="productPurchasePrice" placeholder="0.00" min="0" step="0.01" name="purchase_unit_price" required />
+                    </div>
+                </div>
+                <div class="price-fields-row">
+                    <div class="form-group">
                         <label for="coefficient">Coefficient</label>
-                        <input 
-                            type="number" 
-                            id="coefficient" 
-                            placeholder="1.3" 
-                            value="1.3"
-                            min="1.3" 
-                            step="0.01" 
-                            required 
-                            name="coefficient"
-                        />
+                        <input type="number" id="coefficient" placeholder="1.3" min="1.3" step="0.01" name="coefficient" required />
                     </div>
                     <div class="form-group">
                         <label for="productSalePrice">Prix unitaire de vente (€)</label>
-                        <input 
-                            type="number" 
-                            id="productSalePrice" 
-                            placeholder="0.00" 
-                            min="0" 
-                            step="0.01" 
-                            required 
-                            name="sale_unit_price"
-                        />
+                        <input type="number" id="productSalePrice" placeholder="0.00" min="0" step="0.01" name="sale_unit_price" required />
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Annuler</button>
-                <button id="saveProductBtn" type="submit" class="btn btn-primary">
-                    Enregistrer
-                </button>
+                <button type="button" class="btn btn-secondary" data-close-product-modal="true">Annuler</button>
+                <button id="saveProductBtn" type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
         </form>
     </div>

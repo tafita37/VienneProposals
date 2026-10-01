@@ -204,15 +204,9 @@
 	flex: 0 0 auto;
 }
 
-.product-modal-content #productModalMessage:empty {
-	display: none;
-	margin: 0;
-	min-height: 0;
-}
-
 .product-modal-content .price-fields-row {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 1rem;
 }
 
@@ -272,6 +266,136 @@
 	margin-top: 0.5rem;
 	font-size: 0.85rem;
 	color: var(--text-light);
+}
+
+/* Tableau des produits */
+
+.products-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.products-table thead tr {
+	background: #f9f7f4;
+	border-bottom: 2px solid var(--border);
+}
+
+.products-table th {
+	padding: 0.75rem;
+	text-align: left;
+}
+
+.products-table td {
+	padding: 0.75rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.products-table .product-actions .btn + .btn {
+	margin-left: 0.5rem;
+}
+
+.products-table .btn-delete {
+	background: var(--warning);
+}
+
+.products-table .products-empty {
+	padding: 1rem;
+	text-align: center;
+	color: var(--text-light);
+}
+
+/* Explication sous chaque produit */
+
+.product-explanation-row {
+	background-color: #fafaf8;
+	border-bottom: 2px solid var(--border);
+}
+
+.products-table .product-explanation-row td {
+	padding: 1rem;
+}
+
+.explanation-panel {
+	border-left: 3px solid var(--accent);
+	padding-left: 1rem;
+	color: var(--text-dark);
+}
+
+.explanation-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+	margin-bottom: 0.35rem;
+}
+
+.explanation-panel__label {
+	display: block;
+	margin-bottom: 0.35rem;
+	font-weight: 600;
+	font-size: 0.85rem;
+}
+
+.explanation-panel__header .explanation-panel__label {
+	margin-bottom: 0;
+}
+
+.explanation-panel__text {
+	margin: 0;
+	color: var(--text-dark);
+	font-size: 0.9rem;
+	white-space: pre-line;
+}
+
+.explanation-panel__text.is-empty {
+	color: var(--text-light);
+	font-style: italic;
+}
+
+.explanation-panel__input {
+	width: 100%;
+	min-height: 70px;
+	padding: 0.75rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	resize: vertical;
+	font-size: 0.9rem;
+	font-family: inherit;
+}
+
+.explanation-panel__actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-top: 0.75rem;
+}
+
+.explanation-btn {
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	color: var(--text-dark);
+	cursor: pointer;
+	font-size: 0.85rem;
+	padding: 0.45rem 0.75rem;
+}
+
+.explanation-btn--small {
+	font-size: 0.8rem;
+	padding: 0.3rem 0.6rem;
+}
+
+.explanation-btn--save {
+	background: var(--success);
+	border-color: var(--success);
+	color: white;
+	font-weight: 600;
+}
+
+.explanation-btn:disabled {
+	opacity: 0.6;
+	cursor: wait;
 }
 
 @media (max-width: 768px) {

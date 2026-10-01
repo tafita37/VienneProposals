@@ -214,3 +214,8 @@ INSERT INTO help_document(level, title, step, type, content) VALUES
 INSERT INTO help_document(level, title, step, type, content) VALUES
 ('admin', 'Déconnexion', '1', 'url', 'Pour vous déconnecter de votre compte admin, cliquez sur le bouton "Déconnexion" dans le menu latéral.'),
 ('admin', 'Déconnexion', null, 'navigation', 'Assurez-vous de sauvegarder toutes les modifications avant de vous déconnecter pour éviter toute perte de données.');
+
+-- Product movement
+INSERT INTO product_movement (product_id, price, movement_type)
+SELECT id, purchase_unit_price, 'entry'
+FROM product;
