@@ -61,7 +61,7 @@ def build_proposal_pdf(proposal, base_url):
     overlay_css = CSS(string='''
         @page {
             size: A4;
-            margin: 0 0 20mm 0;
+            margin: 0 0 18mm 0;
             @bottom-center {
                 content: counter(page) " / " counter(pages);
                 vertical-align: top;

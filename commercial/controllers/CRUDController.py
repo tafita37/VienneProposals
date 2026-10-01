@@ -1,9 +1,11 @@
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, redirect
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models import ProtectedError
 from django.http import JsonResponse
+from django.urls import reverse
 from decimal import Decimal, InvalidOperation
-
+from django.db.models import OuterRef, Subquery
 from authentification.decoratos import admin_required
 from commercial.metier.Category import Category
 from commercial.metier.CompanyType import CompanyType
@@ -11,7 +13,9 @@ from commercial.metier.Individual import Individual
 from commercial.metier.Client import Client
 from commercial.metier.Company import Company
 from commercial.metier.Product import Product
+from commercial.metier.ProductMovement import ProductMovement
 from commercial.metier.ProductsCoefficientHistory import ProductsCoefficientHistory
+from commercial.metier.Supplier import Supplier
 from commercial.metier.Unit import Unit
 
 @require_GET
@@ -34,23 +38,58 @@ def liste_categorie_page(request):
         {"categories": all_categories}
     )
     
+def _admin_products_queryset():
+    """Produits avec unité, catégories et fournisseur de la dernière entrée de stock."""
+    last_entry = ProductMovement.objects.filter(
+        product_id=OuterRef('pk'),
+        movement_type=ProductMovement.MOVEMENT_TYPE_ENTRY,
+    ).order_by('-movement_date', '-id')
+
+    return (
+        Product.objects
+        .select_related('unit')
+        .prefetch_related('categories')
+        .annotate(
+            last_supplier_id=Subquery(last_entry.values('supplier_id')[:1]),
+            last_supplier_name=Subquery(last_entry.values('supplier__name')[:1]),
+        )
+        .order_by('designation')
+    )
+
+
+def _serialize_admin_product(product):
+    # Lecture via le prefetch : les propriétés category_* de Product refont une requête par produit
+    categories = list(product.categories.all())
+    return {
+        'id': product.id,
+        'designation': product.designation,
+        'category_ids': sorted(category.id for category in categories),
+        'category_names': ', '.join(sorted(category.name for category in categories)),
+        'unit_id': product.unit_id,
+        'unit_name': product.unit.name,
+        'supplier_id': product.last_supplier_id,
+        'supplier_name': product.last_supplier_name,
+        'purchase_unit_price': float(product.purchase_unit_price),
+        'sale_unit_price': float(product.sale_unit_price),
+        'explanation': product.explanation or '',
+    }
+
+
 @require_GET
 @admin_required
 def liste_product_page(request):
-    all_products = Product.objects.select_related('unit').prefetch_related('categories').order_by('designation').all()
-    all_categories = Category.objects.all()
-    all_units = Unit.objects.all()
     product_coefficient_history = ProductsCoefficientHistory.objects.order_by('-date_change', '-id').first()
     global_coefficient = product_coefficient_history.coefficient if product_coefficient_history else Decimal('1.30')
     return render(
-        request, 
+        request,
         "views/products.html",
         {
-            "products": all_products,
-            "categories": all_categories,
-            "units": all_units,
-            "product_coefficient_history": product_coefficient_history,
+            "products": [_serialize_admin_product(product) for product in _admin_products_queryset()],
+            "categories": Category.objects.order_by('name'),
+            "units": Unit.objects.order_by('name'),
+            "suppliers": Supplier.objects.order_by('name'),
             "global_coefficient": global_coefficient,
+            "error": request.GET.get('error', ''),
         }
     )
 
@@ -61,34 +100,16 @@ def get_products_api(request):
     nom = request.GET.get('nom', '').strip()
     category_id = request.GET.get('category_id', '').strip()
 
-    products = Product.objects.select_related('unit').prefetch_related('categories').all()
+    products = _admin_products_queryset()
 
     if nom:
         products = products.filter(designation__icontains=nom)
 
-    if category_id:
+    if category_id.isdigit():
         products = products.filter(categories__id=category_id).distinct()
-        
-    products=products.order_by('designation')
 
-    data = [
-        {
-            'id': product.id,
-            'designation': product.designation,
-            'category_id': product.category_id,
-            'category_name': product.category_names or 'Non catégorisé',
-            'category_ids': product.category_ids,
-            'unit_id': product.unit_id,
-            'unit_name': product.unit.name,
-            'purchase_unit_price': float(product.purchase_unit_price),
-            'sale_unit_price': float(product.sale_unit_price),
-            'explanation': product.explanation,
-        }
-        for product in products
-    ]
+    return JsonResponse({'products': [_serialize_admin_product(product) for product in products]})
 
-    return JsonResponse({'products': data})
-    
 @require_GET
 @admin_required
 def new_client_page(request):
@@ -194,51 +215,58 @@ def saveCategorie(request):
     category.save()
     return redirect('liste_categorie_page')
 
+def _parse_ids(raw_values):
+    ids = []
+    for raw_value in raw_values:
+        try:
+            ids.append(int(raw_value))
+        except (TypeError, ValueError):
+            continue
+    return ids
+
+
+def _record_purchase_entry(product, supplier_id):
+    """Trace une entrée de stock si le fournisseur ou le prix d'achat a changé depuis la dernière entrée."""
+    last_entry = (
+        ProductMovement.objects
+        .filter(product=product, movement_type=ProductMovement.MOVEMENT_TYPE_ENTRY)
+        .order_by('-movement_date', '-id')
+        .first()
+    )
+    if last_entry and last_entry.supplier_id == supplier_id and last_entry.price == product.purchase_unit_price:
+        return
+
+    ProductMovement.objects.create(
+        product=product,
+        supplier_id=supplier_id,
+        price=product.purchase_unit_price,
+        movement_type=ProductMovement.MOVEMENT_TYPE_ENTRY,
+    )
+
+
 @require_POST
 @admin_required
 def saveProduct(request):
-    def _extract_category_ids():
-        raw_category_ids = [value for value in request.POST.getlist('category_ids') if value]
-        if not raw_category_ids:
-            single_category_id = request.POST.get('category_id')
-            if single_category_id:
-                raw_category_ids = [single_category_id]
+    product_id = request.POST.get('id')
+    product = Product() if not product_id else Product.objects.filter(id=product_id).first()
+    if product is None:
+        return redirect('liste_product_page')
 
-        category_ids = []
-        for raw_category_id in raw_category_ids:
-            try:
-                category_ids.append(int(raw_category_id))
-            except (TypeError, ValueError):
-                continue
-        return category_ids
+    product.designation = request.POST.get('designation')
+    product.purchase_unit_price = float(request.POST.get('purchase_unit_price'))
+    product.sale_unit_price = float(request.POST.get('sale_unit_price'))
+    product.coefficient = request.POST.get('coefficient')
+    product.unit_id = request.POST.get('unit_id')
 
-    category_ids = _extract_category_ids()
+    category_ids = _parse_ids(request.POST.getlist('category_ids'))
+    supplier_ids = _parse_ids([request.POST.get('supplier_id')])
+    supplier_id = supplier_ids[0] if supplier_ids else None
 
-    id = request.POST.get('id')
-    if id:
-        product = Product.objects.filter(id=id).first()
-        if product is None:
-            return redirect('liste_product_page')
-
-        product.designation = request.POST.get('designation')
-        product.purchase_unit_price = request.POST.get('purchase_unit_price')
-        product.sale_unit_price = request.POST.get('sale_unit_price')
-        product.coefficient = request.POST.get('coefficient')
-        product.unit_id = request.POST.get('unit_id')
-    else:
-        product = Product(
-            designation=request.POST.get('designation'),
-            purchase_unit_price=request.POST.get('purchase_unit_price'),
-            sale_unit_price=request.POST.get('sale_unit_price'),
-            coefficient=request.POST.get('coefficient'),
-            unit_id=request.POST.get('unit_id'),
-        )
-
-    product.save()
-    if category_ids:
+    with transaction.atomic():
+        product.save()
         product.categories.set(Category.objects.filter(id__in=category_ids))
-    else:
-        product.categories.clear()
+        _record_purchase_entry(product, supplier_id)
+
     return redirect('liste_product_page')
 
 
@@ -357,5 +385,53 @@ def delete_product(request):
     product_id= request.GET.get('id')
     product = Product.objects.filter(id=product_id).first()
     if product:
-        product.delete()
+        try:
+            product.delete()
+        except ProtectedError:
+            return redirect(f"{reverse('liste_product_page')}?error=used")
     return redirect('liste_product_page')
+
+@require_GET
+@admin_required
+def liste_supplier_page(request):
+    all_suppliers = Supplier.objects.order_by('name').all()
+    return render(
+        request,
+        "views/suppliers.html",
+        {
+            "suppliers": all_suppliers,
+            "error": request.GET.get('error', ''),
+        }
+    )
+
+@require_POST
+@admin_required
+def save_supplier(request):
+    id = request.POST.get('id')
+    name = (request.POST.get('name') or '').strip()
+    if not name:
+        return redirect(f"{reverse('liste_supplier_page')}?error=empty")
+    if id:
+        supplier = Supplier.objects.filter(id=id).first()
+        if not supplier:
+            return redirect('liste_supplier_page')
+        supplier.name = name
+    else:
+        supplier = Supplier(name=name)
+    try:
+        supplier.save()
+    except IntegrityError:
+        return redirect(f"{reverse('liste_supplier_page')}?error=duplicate")
+    return redirect('liste_supplier_page')
+
+@require_GET
+@admin_required
+def delete_supplier(request):
+    supplier_id = request.GET.get('id')
+    supplier = Supplier.objects.filter(id=supplier_id).first()
+    if supplier:
+        try:
+            supplier.delete()
+        except ProtectedError:
+            return redirect(f"{reverse('liste_supplier_page')}?error=used")
+    return redirect('liste_supplier_page')

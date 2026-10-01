@@ -1,0 +1,115 @@
+{% extends 'baseAdmin.html' %}
+
+{% load static %}
+
+{% block title %}Fournisseurs - Vienne Agencement{% endblock %}
+
+{% block header_title %}Fournisseurs{% endblock %}
+
+{% block header_subtitle %}Gérez les fournisseurs de produits.{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/suppliers.css' %}">
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pages/suppliers.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Liste des fournisseurs</h2>
+        <button id="addSupplierBtn" class="btn btn-primary" style="max-width: 220px;">+ Ajouter un
+            fournisseur</button>
+    </div>
+</div>
+
+<div class="card">
+    <div id="suppliersMessage" class="form-message{% if error %} error{% endif %}" aria-live="polite">
+        {% if error == 'duplicate' %}
+        Un fournisseur porte déjà ce nom.
+        {% elif error == 'used' %}
+        Ce fournisseur ne peut pas être supprimé car il est lié à des mouvements de produits.
+        {% elif error == 'empty' %}
+        Le nom du fournisseur est obligatoire.
+        {% endif %}
+    </div>
+    <div style="overflow-x: auto;">
+        <table id="suppliersTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9f7f4; border-bottom: 2px solid var(--border);">
+                    <th style="padding: 0.75rem; text-align: left;">Nom</th>
+                    <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{supplier.name}}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <button
+                            type="button"
+                            class="btn btn-secondary js-edit-supplier"
+                            style="margin-right: 0.5rem;"
+                            data-supplier-id="{{ supplier.id }}"
+                            data-supplier-name="{{ supplier.name }}"
+                        >
+                            ✏️
+                        </button>
+                        <a
+                            href="{% url 'delete_supplier' %}?id={{supplier.id}}"
+                            class="btn btn-secondary js-delete-supplier"
+                            style="background: var(--warning);"
+                            data-supplier-name="{{ supplier.name }}"
+                        >🗑️</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" style="padding: 0.75rem; text-align: center; color: var(--text-light);">Aucun fournisseur enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="delete-confirm-modal hidden" aria-hidden="true" style="display: none;">
+    <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+    <div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+        <h3 id="deleteConfirmTitle">Confirmer la suppression</h3>
+        <p id="deleteConfirmText">Voulez-vous vraiment supprimer ce fournisseur ?</p>
+        <div class="delete-confirm-actions">
+            <button type="button" id="deleteCancelBtn" class="btn btn-secondary">Annuler</button>
+            <a id="deleteConfirmBtn" href="#" class="btn btn-primary">Supprimer</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter/modifier fournisseur -->
+<div id="supplierModal" class="modal" style="display: none;">
+    <form action="{% url 'save_supplier' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Ajouter un fournisseur</h3>
+                <button type="button" class="modal-close" onclick="closeSupplierModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalMessage" class="form-message" aria-live="polite"></div>
+                <div class="form-group">
+                    <label for="supplierName">Nom</label>
+                    <input type="text" id="supplierName" placeholder="Ex. Leroy Merlin" required maxlength="100" name="name" />
+                </div>
+            </div>
+            <input type="hidden" id="supplierId" name="id" />
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Annuler</button>
+                <button type="submit" id="saveSupplierBtn" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

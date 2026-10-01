@@ -156,12 +156,22 @@ CREATE TABLE excel_import(
    PRIMARY KEY(id)
 );
 
--- 
+CREATE TABLE supplier(
+   id SERIAL,
+   name VARCHAR(100)  NOT NULL,
+   PRIMARY KEY(id),
+   UNIQUE(name)
+);
 
-CREATE TABLE users_role(
-   id INTEGER,
-   id_1 INTEGER,
-   PRIMARY KEY(id, id_1),
-   FOREIGN KEY(id) REFERENCES role(id),
-   FOREIGN KEY(id_1) REFERENCES users(id)
+create table product_movement(
+   id SERIAL,
+   product_id INTEGER NOT NULL,
+   supplier_id INTEGER,
+   quantity DOUBLE PRECISION,
+   price DOUBLE PRECISION NOT NULL,
+   movement_date DATE NOT NULL DEFAULT NOW(),
+   movement_type VARCHAR(5)  NOT NULL, -- 'entry' or 'exit'
+   PRIMARY KEY(id),
+   FOREIGN KEY(product_id) REFERENCES product(id),
+   FOREIGN KEY(supplier_id) REFERENCES supplier(id)
 );

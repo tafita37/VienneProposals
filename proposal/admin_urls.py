@@ -44,6 +44,7 @@ urlpatterns = [
     path('client/', include('commercial.url_crud.client_url')),
     path('category/', include('commercial.url_crud.categorie_url')),
     path('product/', include('commercial.url_crud.product_url')),
+    path('supplier/', include('commercial.url_crud.supplier_url')),
     path('user/', include('authentification.url_crud.user_url')),
     path('import_page/', import_page, name='import_page'),
     path('import/api/categories/', categories_api, name='import_categories_api'),

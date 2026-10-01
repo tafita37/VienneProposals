@@ -6,6 +6,8 @@ from commercial.metier.CompanyType import CompanyType
 from commercial.metier.Individual import Individual
 from commercial.metier.Product import Product
 from commercial.metier.ProductCategory import ProductCategory
+from commercial.metier.ProductMovement import ProductMovement
 from commercial.metier.ProposalProduct import ProposalProduct
+from commercial.metier.Supplier import Supplier
 from commercial.metier.Unit import Unit
 
