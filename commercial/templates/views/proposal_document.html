@@ -2,20 +2,17 @@
 
 {% load static %}
 
-{% load l10n %}
-
-{% block title %}Aperçu Proposition - Vienne Agencement{% endblock %}
-
-{% block header_title %}Apperçu proposition{% endblock %}
+{% comment %}
+Document de proposition commerciale, commun à l'aperçu (création / modification) et au détail.
+Variables attendues : doc_date, commercial, ref_chantier (optionnel), proposal_number (optionnel),
+client, project_name, installation_address, summary_categories, amount_ht, tva_amount, amount_ttc,
+no_included, cgv. Les pages enfants définissent leurs boutons dans le bloc document_actions.
+{% endcomment %}
 
 {% block header_subtitle %}Propositions commerciale - Document professionnel{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{% static 'css/pages/preview-proposition.css' %}">
-{% endblock %}
-
-{% block js %}
-<script src="{% static 'js/pages/preview-proposition-edit.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -25,7 +22,7 @@
         margin: 0;
         padding: 0;
     }
-
+    
     .page {
         width: 210mm;
         min-height: 297mm;
@@ -378,7 +375,6 @@
         line-height: 1.6;
     }
 
-
     .signature .mention {
         font-style: italic;
         color: #666;
@@ -418,16 +414,29 @@
             background: #fff;
         }
 
+        .action-buttons {
+            display: none !important;
+        }
+
         .preview-document {
             box-shadow: none;
             margin: 0;
-            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        /* Force les couleurs d'impression */
+        .print-signoff {
+            margin-top: auto;
+        }
+
         thead tr {
             background: #7ab317 !important;
             color: #fff !important;
+        }
+
+        .subtotal-row {
+            background: #e6edd2;
         }
 
         .subtotal-row td {
@@ -459,28 +468,28 @@
         </div>
 
         <div class="header-right">
-            <p class="date">Date : <strong>{{ proposal_date_proposition }}</strong></p>
+            <p class="date">Date : <strong>{{ doc_date|date:'d.m.Y' }}</strong></p>
             <br>
-            <!-- <p class="ref">Ref. chantier : <span>VA 2600{{ proposal.id }} ANN</span></p> -->
-            <p class="ref">Référent en charge du dossier : 
-                <span>{{ commercial.first_name }} {{commercial.last_name }}</span></p>
+            {% if ref_chantier %}
+            <p class="ref">Ref. chantier : <span>{{ ref_chantier }}</span></p>
+            {% endif %}
+            <p class="ref">Référent en charge du dossier : <span>{{ commercial.first_name }} {{ commercial.last_name }}</span></p>
         </div>
     </div>
 
     <hr class="sep">
 
     <!-- TITRE -->
-    <div class="prop-title">Proposition Commerciale N° : {{ proposal_commercial_proposal_number }}</div>
+    <div class="prop-title">Proposition Commerciale{% if proposal_number %} N° : {{ proposal_number }}{% endif %}</div>
 
     <!-- CLIENT / PROJET -->
     <div class="client-projet">
         <div class="client-box">
             <label>Raison sociale/Nom Complet</label>
-            <div class="name">{{ selected_client.name }}</div>
-            <p>{{ selected_client.address }}</p>
-            <!-- <p>79240 VERNOUX-EN-GÂTINE</p> -->
-            <p class="tel">{{ selected_client.phone }}</p>
-            <p class="email">{{ selected_client.email }}</p>
+            <div class="name">{{ client.name }}</div>
+            <p>{{ client.address }}</p>
+            <p class="tel">{{ client.phone }}</p>
+            <p class="email">{{ client.email }}</p>
         </div>
         <div class="projet-box">
             <label>Le projet</label>
@@ -507,7 +516,6 @@
         </thead>
 
         <tbody>
-            {% if summary_categories %}
             {% for category in summary_categories %}
             <tr class="section-row">
                 <td colspan="4">{{ category.name }}</td>
@@ -515,34 +523,34 @@
             {% for item in category.items %}
             <tr class="item-row">
                 <td>{{ item.designation }}</td>
-                <td>{{ item.quantity|floatformat:2 }}</td>
+                <td>{{ item.quantity|floatformat:2 }} {{ item.unit }}</td>
                 <td class="price">{{ item.sale_unit_price|floatformat:2 }}&nbsp;€</td>
                 <td class="price">{{ item.total|floatformat:2 }}&nbsp;€</td>
             </tr>
             {% if item.explanation %}
-              <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
-                <td colspan="5" style="padding: 1rem;">
-                  <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
-                    <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
-                  </div>
+            <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
+                <td colspan="4" style="padding: 1rem;">
+                    <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
+                        <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
+                    </div>
                 </td>
-              </tr>
-              {% endif %}
+            </tr>
+            {% endif %}
             {% endfor %}
             <tr class="subtotal-row">
                 <td colspan="3">Sous-total {{ category.name }}</td>
                 <td>{{ category.total|floatformat:2 }}&nbsp;€</td>
             </tr>
-            {% endfor %}
-            {% else %}
+            {% empty %}
             <tr class="item-row">
-                <td colspan="3" style="text-align: center; padding: 20px; color: #888;">
+                <td colspan="4" style="text-align: center; padding: 20px; color: #888;">
                     Aucun produit sélectionné
                 </td>
             </tr>
-            {% endif %}
+            {% endfor %}
         </tbody>
     </table>
+
     <!-- TOTAUX -->
     <div style="height:16px;"></div>
     <table class="totaux-table">
@@ -550,7 +558,7 @@
             <tr class="ht-row">
                 <td style="width:60%;"></td>
                 <td style="text-align:left; color:#555;">Montant HT</td>
-                <td class="align-right" style="font-weight:700; font-size:14px;">{{ proposal_total|floatformat:2}}&nbsp;€</td>
+                <td class="align-right" style="font-weight:700; font-size:14px;">{{ amount_ht|floatformat:2 }}&nbsp;€</td>
             </tr>
             <tr class="tva-row">
                 <td></td>
@@ -560,7 +568,7 @@
             <tr class="ttc-row">
                 <td></td>
                 <td style="width: 30%;">Montant Total TTC</td>
-                <td style="text-align:right; font-size:18px; font-weight:800;">{{ total_ttc|floatformat:2 }}&nbsp;€</td>
+                <td style="text-align:right; font-size:18px; font-weight:800;">{{ amount_ttc|floatformat:2 }}&nbsp;€</td>
             </tr>
         </tbody>
     </table>
@@ -568,18 +576,16 @@
     <div class="non-compris">
         <h4>Non compris dans cette étude :</h4>
         {% for item in no_included %}
-            <li>{{ item }}</li>
+        <li>{{ item }}</li>
         {% endfor %}
     </div>
-    
 
-    <!-- CONDITIONS & SIGNATURE -->
-    <!-- <div class="print-signoff"> -->
+    <div class="print-signoff">
         <div class="bottom-section">
             <div class="cgv">
                 <h4>Conditions de règlement :</h4>
                 {% for item in cgv %}
-                    <p>{{ item }}</p>
+                <p>{{ item }}</p>
                 {% endfor %}
             </div>
             <div class="signature">
@@ -588,25 +594,15 @@
             </div>
         </div>
 
-        <!-- FOOTER PAGE 1 -->
+        <!-- FOOTER -->
         <div class="footer">
-            <strong>SAS VIENNE AGENCEMENT</strong> - 14 Route des Oriollères 86550 MIGNALOUX-BEAUVOIR - <strong>05 49 62
-                06
-                02</strong> -<br>
+            <strong>SAS VIENNE AGENCEMENT</strong> - 14 Route des Oriollères 86550 MIGNALOUX-BEAUVOIR - <strong>05 49 62 06 02</strong> -<br>
             SIRET : 831 317 029 000 13 - IBAN FR76 1940 6000 3867 1769 8385 761 - Code NAF (APE) 3109B - N° TVA FR07831317029
-            </div>
-    <!-- </div> -->
+        </div>
+    </div>
 
     <div class="action-buttons">
-        <a href="{% url 'new_proposition_page' %}" class="btn btn-secondary">← Retour</a>
-        <form action="{% url 'save_draft_proposition_edit_page' %}" method="post" style="display: inline;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-secondary" title="Enregistrer cette proposition comme brouillon">📝
-                Enregistrer en brouillon</button>
-        </form>
-        <a href="{% url 'validate_proposition_edit_page' %}" class="btn btn-primary">✅ Valider</a>
-        <a href="{% url 'proposition_pdf' pk=proposal_id %}" class="btn btn-pdf">📥 Télécharger PDF</a>
-        <!-- <button type="button" class="btn btn-pdf" onclick="window.print()">📥 Télécharger PDF</button> -->
+        {% block document_actions %}{% endblock %}
     </div>
 </div>
 {% endblock %}
