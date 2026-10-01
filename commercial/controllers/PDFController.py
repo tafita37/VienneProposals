@@ -63,7 +63,7 @@ def build_proposal_pdf(proposal, base_url):
             size: A4;
             margin: 0 0 20mm 0;
             @bottom-center {
-                content: "Page " counter(page) " / " counter(pages);
+                content: counter(page) " / " counter(pages);
                 vertical-align: top;
                 font-family: 'DejaVu Sans', Arial, sans-serif;
                 font-size: 12px;
