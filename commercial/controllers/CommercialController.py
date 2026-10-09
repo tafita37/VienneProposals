@@ -32,6 +32,7 @@ from commercial.controllers.ProposalService import (
     to_float,
     to_int,
     tva_amount,
+    validity_label,
 )
 from commercial.metier.Category import Category
 from commercial.metier.Client import Client
@@ -635,6 +636,7 @@ def _render_proposal_preview(request, edit):
             'is_edit': edit,
             'draft_id': proposal_session.draft_id,
             'doc_date': proposal_session.proposal_date,
+            'validity_label': validity_label(proposal_session.proposal_date, proposal_session.expiration_date),
             'commercial': request.user,
             'proposal_number': proposal_session.get('commercial_proposal_number', '') if edit else '',
             'client': Client.objects.filter(id=client_id).first() if client_id else None,
@@ -853,6 +855,7 @@ def proposition_detail(request):
         {
             'proposal': commercial_proposal,
             'doc_date': commercial_proposal.date_proposal,
+            'validity_label': validity_label(commercial_proposal.date_proposal, commercial_proposal.expiration_date),
             'commercial': commercial_proposal.commercial,
             'ref_chantier': f'VA 2600{commercial_proposal.id} ANN',
             'proposal_number': commercial_proposal.commercial_proposal_number,
