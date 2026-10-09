@@ -57,6 +57,25 @@ def tva_amount(amount_ht, include_tva):
     return amount_ht * TVA_RATE if include_tva else 0.0
 
 
+def validity_label(proposal_date, expiration_date):
+    """Durée de validité affichée sur le document, ex. « Valable 6 mois ».
+
+    Le nombre de mois est arrondi au plus proche (30 jours -> 1 mois, 182 jours -> 6 mois) ;
+    en dessous d'un mois, la durée est donnée en jours. Chaîne vide si une date manque.
+    """
+    if proposal_date is None or expiration_date is None:
+        return ''
+
+    days = (expiration_date - proposal_date).days
+    if days <= 0:
+        return ''
+
+    months = round(days / (365.25 / 12))
+    if months >= 1:
+        return f'Valable {months} mois'
+    return f'Valable {days} jour{"s" if days > 1 else ""}'
+
+
 # ────────── Textes multilignes (« Non compris », « Conditions de règlement ») ──────────
 # Format de stockage historique (session et base) : les retours à la ligne sont
 # enregistrés sous la forme littérale « \n ». Les anciennes valeurs, produites par

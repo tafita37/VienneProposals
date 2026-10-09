@@ -494,7 +494,7 @@ no_included, cgv. Les pages enfants définissent leurs boutons dans le bloc docu
         <div class="projet-box">
             <label>Le projet</label>
             <div class="name">{{ project_name }}</div>
-            <p>Mme.BROSSEAU Annabelle</p>
+            <!-- <p>Mme.BROSSEAU Annabelle</p> -->
             <p>{{ installation_address }}</p>
             <p style="font-weight:700;">05 49 62 06 02</p>
         </div>
@@ -502,7 +502,7 @@ no_included, cgv. Les pages enfants définissent leurs boutons dans le bloc docu
 
     <!-- TITRE ESTIMATIF -->
     <div class="estimatif-title">Estimatif Projet</div>
-    <div class="estimatif-sub">Valable 6 mois</div>
+    {% if validity_label %}<div class="estimatif-sub">{{ validity_label }}</div>{% endif %}
 
     <!-- TABLEAU -->
     <table>
@@ -531,8 +531,8 @@ no_included, cgv. Les pages enfants définissent leurs boutons dans le bloc docu
             <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
                 <td colspan="4" style="padding: 6px 12px 10px; text-align: left;">
                     <!-- Barre verte dans la marge de la cellule : le texte s'aligne sur le nom du produit -->
-                    <div style="border-left: 3px solid #94c03c; padding-left: 9px; margin-left: -12px;">
-                        <p style="margin: 0; color: #333; font-size: 10px; text-align: left;">{{ item.explanation }}</p>
+                    <div style="border-left: 3px solid #94c03c; padding-left: 9px; margin-left: -12px; padding-right : 50px;">
+                        <p style="margin: 0; color: #333; font-size: 10px; text-align: justify;">{{ item.explanation }}</p>
                     </div>
                 </td>
             </tr>

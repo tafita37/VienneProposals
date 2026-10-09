@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pypdf import PdfReader, PdfWriter
 
-from commercial.controllers.ProposalService import build_summary, multiline_items, proposal_lines, tva_amount
+from commercial.controllers.ProposalService import build_summary, multiline_items, proposal_lines, tva_amount, validity_label
 from commercial.metier.CommercialProposal import CommercialProposal
 from proposal import settings
 
@@ -23,6 +23,7 @@ def build_proposal_pdf(proposal, base_url):
         'summary_categories': summary_categories,
         'proposal_total': proposal_total,
         'tva_amount': amount_tva,
+        'validity_label': validity_label(proposal.date_proposal, proposal.expiration_date),
         'total_ttc': proposal_total + amount_tva,
         'include_tva': include_tva,
         'no_included': multiline_items(proposal.no_included),
@@ -51,13 +52,15 @@ def build_proposal_pdf(proposal, base_url):
         writer.add_page(page)
 
     # Numérotation de toutes les pages (PDF généré + pages ajoutées)
-    # Pages générées : numéro au-dessus du footer ; pages ajoutées (CGV) : numéro plus bas
-    main_pages_count = len(main_reader.pages)
+    # Pages générées : numéro dans la bande vide du bas (le tableau n'y descend jamais),
+    # sauf sur celles qui portent le footer vert où il reste au-dessus du footer ;
+    # pages ajoutées (CGV) : numéro plus bas
     second_pages_count = len(second_reader.pages)
-    overlay_html = (
-        '<div class="page"></div>' * main_pages_count
-        + '<div class="page annex"></div>' * second_pages_count
-    )
+    overlay_html = ''.join(
+        '<div class="page"></div>' if 'SAS VIENNE AGENCEMENT' in (page.extract_text() or '')
+        else '<div class="page low"></div>'
+        for page in main_reader.pages
+    ) + '<div class="page annex"></div>' * second_pages_count
     overlay_css = CSS(string='''
         @page {
             size: A4;
@@ -69,10 +72,14 @@ def build_proposal_pdf(proposal, base_url):
                 font-size: 12px;
             }
         }
+        @page low {
+            margin: 0 0 8mm 0;
+        }
         @page annex {
             margin: 0 0 10mm 0;
         }
         .page + .page { break-before: page; }
+        .low { page: low; }
         .annex { page: annex; }
     ''')
     overlay_bytes = HTML(string=overlay_html).write_pdf(stylesheets=[overlay_css])
