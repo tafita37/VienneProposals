@@ -529,9 +529,10 @@ no_included, cgv. Les pages enfants définissent leurs boutons dans le bloc docu
             </tr>
             {% if item.explanation %}
             <tr style="background-color: #fafaf8; border-bottom: 2px solid #e0e0e0;">
-                <td colspan="4" style="padding: 1rem;">
-                    <div style="border-left: 3px solid #94c03c; padding-left: 1rem;">
-                        <p style="margin: 0; color: #333; font-size: 0.9rem;">{{ item.explanation }}</p>
+                <td colspan="4" style="padding: 6px 12px 10px; text-align: left;">
+                    <!-- Barre verte dans la marge de la cellule : le texte s'aligne sur le nom du produit -->
+                    <div style="border-left: 3px solid #94c03c; padding-left: 9px; margin-left: -12px;">
+                        <p style="margin: 0; color: #333; font-size: 10px; text-align: left;">{{ item.explanation }}</p>
                     </div>
                 </td>
             </tr>

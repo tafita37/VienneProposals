@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr data-product-id="${productId}" data-quantity="${quantity}" data-coefficient="${coefficient}">
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${categoryName}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${designation}</td>
-                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity}</td>
+                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity} ${product.unit}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                     <span data-role="unit-price-text">${unitPrice.toFixed(2)} €</span>
                     <input type="number" data-role="unit-price-input" step="0.01" min="0" style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 110px; font-size: 0.9rem;">
