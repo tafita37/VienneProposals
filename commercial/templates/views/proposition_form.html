@@ -156,7 +156,7 @@
         <span>📝</span> Saisie des produits
     </h3>
 
-    <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 1rem; align-items: end;">
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr) auto; gap: 1rem; align-items: end;">
         <div style="display: flex; flex-direction: column;">
             <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Catégorie</label>
             <select id="productCategorySelect" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
@@ -178,6 +178,13 @@
             <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Prix unitaire (€)</label>
             <input id="productUnitPrice" type="text" value="0.00" readonly tabindex="-1"
                 title="Prix de vente du produit × coefficient saisi"
+                style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; background: #f9f7f4; color: var(--text-dark); font-weight: 600; cursor: default;">
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem;">Unité</label>
+            <input id="productUnit" type="text" value="" readonly tabindex="-1"
+                title="Unité du produit sélectionné"
                 style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; background: #f9f7f4; color: var(--text-dark); font-weight: 600; cursor: default;">
         </div>
 
@@ -226,7 +233,12 @@
                 <tr data-product-id="{{ proposal.product.id }}">
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.category_name }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.product.designation }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">{{ proposal.quantity }} {{proposal.product.unit}}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                        <span data-role="quantity-text">{{ proposal.quantity }}</span>
+                        <input type="number" data-role="quantity-input" step="any" min="0"
+                            style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 90px; font-size: 0.9rem;">
+                        {{proposal.product.unit}}
+                    </td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                         <span data-role="unit-price-text">{{ proposal.product.prix_unitaire_vente|floatformat:2 }} €</span>
                         <input type="number" data-role="unit-price-input" step="0.01" min="0"
