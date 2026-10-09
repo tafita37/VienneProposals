@@ -200,6 +200,19 @@ function clearProductFields() {
     if (unitPriceInput) unitPriceInput.value = '0.00';
     if (coefficientInput) coefficientInput.value = '1';
     if (quantityInput) quantityInput.value = '1';
+    updateUnitNameField();
+}
+
+function updateUnitNameField() {
+    const productSelect = document.getElementById('productSelect');
+    const unitInput = document.getElementById('productUnit');
+
+    if (!unitInput) {
+        return;
+    }
+
+    const selectedOption = productSelect?.options[productSelect.selectedIndex];
+    unitInput.value = productSelect?.value ? (selectedOption?.dataset.unitName || '') : '';
 }
 
 function updateUnitPriceFromCoefficient() {
@@ -238,6 +251,7 @@ function fillProductFields(productId) {
     if (selectedOption && selectedOption.dataset.unitPrice) {
         if (coefficientInput) coefficientInput.value = parseFloat(1).toFixed(1);
         updateUnitPriceFromCoefficient();
+        updateUnitNameField();
     } else {
         clearProductFields();
     }
@@ -434,7 +448,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr data-product-id="${productId}" data-quantity="${quantity}" data-coefficient="${coefficient}">
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${categoryName}</td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${designation}</td>
-                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">${quantity} ${product.unit}</td>
+                <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                    <span data-role="quantity-text">${quantity}</span>
+                    <input type="number" data-role="quantity-input" step="any" min="0" style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 90px; font-size: 0.9rem;">
+                    ${product.unit}
+                </td>
                 <td style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
                     <span data-role="unit-price-text">${unitPrice.toFixed(2)} €</span>
                     <input type="number" data-role="unit-price-input" step="0.01" min="0" style="display: none; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; width: 110px; font-size: 0.9rem;">
@@ -523,9 +541,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setUnitPriceEditingState(row, isEditing);
+        setQuantityEditingState(row, isEditing);
     };
 
-    const saveProductExplanation = async (row, explanation, unitPrice) => {
+    const setQuantityEditingState = (explanationRow, isEditing) => {
+        const productRow = getProductRowForExplanationRow(explanationRow);
+        if (!productRow) {
+            return;
+        }
+
+        const quantityText = productRow.querySelector('[data-role="quantity-text"]');
+        const quantityInput = productRow.querySelector('[data-role="quantity-input"]');
+
+        if (quantityInput) {
+            // La saisie repart toujours de la quantite enregistree, a l'ouverture comme a l'annulation
+            // Le template peut afficher la quantite au format francais (« 3,0 ») : un champ number attend « 3.0 »
+            const savedQuantity = String(explanationRow.dataset.quantity || productRow.dataset.quantity || '').replace(',', '.');
+            quantityInput.value = Number.isFinite(Number.parseFloat(savedQuantity)) ? Number.parseFloat(savedQuantity) : '';
+            quantityInput.style.display = isEditing ? '' : 'none';
+        }
+
+        if (quantityText) {
+            quantityText.style.display = isEditing ? 'none' : '';
+        }
+    };
+
+    const saveProductExplanation = async (row, explanation, unitPrice, quantity) => {
         const productId = Number(row?.dataset.productId || 0);
 
         if (!productId) {
@@ -539,6 +580,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (Number.isFinite(unitPrice)) {
             selectedProduct.unit_price = unitPrice;
+        }
+
+        if (Number.isFinite(quantity)) {
+            selectedProduct.quantity = quantity;
         }
 
         const response = await fetch(apiUrls.selected_products, {
@@ -1074,9 +1119,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                const quantityInput = getProductRowForExplanationRow(explanationRow)?.querySelector('[data-role="quantity-input"]');
+                let quantity;
+
+                if (quantityInput) {
+                    quantity = Number.parseFloat(String(quantityInput.value || '').replace(',', '.').trim());
+
+                    if (!Number.isFinite(quantity) || quantity <= 0) {
+                        alert('Veuillez saisir une quantité valide (supérieure à 0).');
+                        quantityInput.focus();
+                        return;
+                    }
+                }
+
                 saveButton.disabled = true;
                 try {
-                    const data = await saveProductExplanation(explanationRow, explanationInput.value || '', unitPrice);
+                    const data = await saveProductExplanation(explanationRow, explanationInput.value || '', unitPrice, quantity);
 
                     if (Array.isArray(data?.proposal)) {
                         refreshDerivedProposalViews(data.proposal);
