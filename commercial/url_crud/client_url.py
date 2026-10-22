@@ -1,6 +1,6 @@
 from django.urls import path
 
-from commercial.controllers.CRUDController import delete_client, edit_client_page, liste_client_page, new_client_page, save_client, update_client
+from commercial.controllers.CRUDController import delete_client, edit_client_page, liste_client_page, new_client_page, save_client, save_company_type_api, update_client
 
 urlpatterns = [
     path('list/', liste_client_page, name='liste_client_page'),
@@ -8,5 +8,6 @@ urlpatterns = [
     path('save/', save_client, name='save_client'),
     path('update/', update_client, name='update_client'),
     path('edit/<int:client_id>/', edit_client_page, name='edit_client_page'),
-    path('delete/', delete_client, name='delete_client')
+    path('delete/', delete_client, name='delete_client'),
+    path('api/company-type/save/', save_company_type_api, name='save_company_type_api')
 ]

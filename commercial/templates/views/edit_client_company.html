@@ -16,6 +16,7 @@
 
 {% block js %}
 <script src="{% static 'js/pages/edit_client_company.js' %}"></script>
+<script src="{% static 'js/pages/company_type_modal.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -64,7 +65,10 @@
                     placeholder="Ex. Atelier Dupont SARL" value="{{ company.name|default:'' }}">
             </div>
             <div class="form-group">
-                <label for="companyType">Type d'entreprise</label>
+                <div class="label-with-action">
+                    <label for="companyType">Type d'entreprise</label>
+                    <button type="button" id="addCompanyTypeBtn" class="link-action">+ Nouveau type</button>
+                </div>
                 <select id="companyType" name="company_type" data-required-when-visible="true">
                     <option value="">Sélectionner un type</option>
                     {% for company_type in company_types %}
@@ -131,4 +135,7 @@
         <button id="nextStep" class="btn btn-primary" type="button">Suivant</button>
     </div>
 </div>
+
+{% url 'save_company_type_api' as company_type_save_url %}
+{% include 'includes/_company_type_modal.html' with save_url=company_type_save_url %}
 {% endblock %}

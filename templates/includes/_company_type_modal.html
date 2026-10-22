@@ -1,0 +1,24 @@
+<!-- Modal pour créer un type d'entreprise sans quitter le formulaire client (save_url : endpoint admin ou user) -->
+<div id="companyTypeModal" class="modal" style="display: none;" data-save-url="{{ save_url }}"
+    aria-hidden="true">
+    <form id="companyTypeForm" novalidate>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="companyTypeModalTitle">
+            <div class="modal-header">
+                <h3 id="companyTypeModalTitle">Nouveau type d'entreprise</h3>
+                <button type="button" class="modal-close" data-close-company-type-modal="true">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="companyTypeModalMessage" class="form-message" aria-live="polite"></div>
+                <div class="form-group">
+                    <label for="companyTypeName">Nom</label>
+                    <input type="text" id="companyTypeName" name="name" placeholder="Ex. SARL" required
+                        maxlength="50" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close-company-type-modal="true">Annuler</button>
+                <button type="submit" id="saveCompanyTypeBtn" class="btn btn-primary">Créer</button>
+            </div>
+        </div>
+    </form>
+</div>
