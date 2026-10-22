@@ -360,7 +360,7 @@ def save_client_user(request):
             registration_number=registration_number,
             tax_identification_number=tax_identification_number,
             created_at=created_at,
-            company_type_id=CompanyType(id=company_type)
+            company_type_id=company_type
         )
         company.save(client_data=client_data)
         created_client_id = company.client_id
@@ -378,6 +378,23 @@ def save_client_user(request):
         ProposalSession(request).set('client_id', created_client_id)
 
     return redirect('new_proposition_page')
+
+
+@require_POST
+@user_required
+def save_company_type_user_api(request):
+    try:
+        company_type = CompanyType.create_from_name(request.POST.get('name'))
+    except ValueError as error:
+        return JsonResponse({'success': False, 'message': str(error)}, status=400)
+
+    return JsonResponse(
+        {
+            'success': True,
+            'message': "Le type d'entreprise a bien été créé.",
+            'company_type': {'id': company_type.id, 'name': company_type.name},
+        }
+    )
 
 @require_POST
 @admin_required

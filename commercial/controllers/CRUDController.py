@@ -204,6 +204,22 @@ def save_client(request):
 
 @require_POST
 @admin_required
+def save_company_type_api(request):
+    try:
+        company_type = CompanyType.create_from_name(request.POST.get('name'))
+    except ValueError as error:
+        return JsonResponse({'success': False, 'message': str(error)}, status=400)
+
+    return JsonResponse(
+        {
+            'success': True,
+            'message': "Le type d'entreprise a bien été créé.",
+            'company_type': {'id': company_type.id, 'name': company_type.name},
+        }
+    )
+
+@require_POST
+@admin_required
 def saveCategorie(request):
     id= request.POST.get('id')
     name = request.POST.get('name')
